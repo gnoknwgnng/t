@@ -1,0 +1,1385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Publishing Hub - PostCraft AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 45%, #475569 100%);
+            color: #fff;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .nav-link {
+            color: #fff;
+            text-decoration: none;
+            padding: 0.8rem 1.2rem;
+            border: 1px solid rgba(255,255,255,0.18);
+            border-radius: 999px;
+            background: rgba(255,255,255,0.08);
+        }
+        .hero h1 {
+            font-size: clamp(2rem, 5vw, 3.6rem);
+            margin-bottom: 0.8rem;
+        }
+        .hero p {
+            color: rgba(255,255,255,0.75);
+            max-width: 780px;
+            line-height: 1.6;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 1.2rem;
+            margin-top: 2rem;
+        }
+        .card {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 24px;
+            padding: 1.25rem;
+            backdrop-filter: blur(10px);
+        }
+        .card h2 {
+            font-size: 1.1rem;
+            margin-bottom: 0.8rem;
+        }
+        .card p {
+            color: rgba(255,255,255,0.72);
+            line-height: 1.5;
+            margin-bottom: 1rem;
+        }
+        .span-4 { grid-column: span 4; }
+        .span-5 { grid-column: span 5; }
+        .span-7 { grid-column: span 7; }
+        .span-12 { grid-column: span 12; }
+        form {
+            display: grid;
+            gap: 0.85rem;
+        }
+        .row-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.85rem;
+        }
+        label {
+            display: grid;
+            gap: 0.35rem;
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.9);
+        }
+        input, select, textarea, button {
+            font: inherit;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 0.85rem 0.95rem;
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.14);
+            background: rgba(15,23,42,0.55);
+            color: #fff;
+        }
+        textarea {
+            min-height: 110px;
+            resize: vertical;
+        }
+        button {
+            border: none;
+            border-radius: 14px;
+            padding: 0.9rem 1rem;
+            background: linear-gradient(135deg, #06b6d4, #2563eb);
+            color: #fff;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .secondary {
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.14);
+        }
+        .list {
+            display: grid;
+            gap: 0.8rem;
+        }
+        .list-item {
+            background: rgba(15,23,42,0.45);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 18px;
+            padding: 1rem;
+        }
+        .list-item h3 {
+            font-size: 1rem;
+            margin-bottom: 0.35rem;
+        }
+        .meta {
+            color: rgba(255,255,255,0.65);
+            font-size: 0.88rem;
+            line-height: 1.45;
+        }
+        .pill {
+            display: inline-block;
+            padding: 0.3rem 0.65rem;
+            border-radius: 999px;
+            background: rgba(34,197,94,0.2);
+            color: #86efac;
+            font-size: 0.78rem;
+            margin-bottom: 0.6rem;
+        }
+        .pill.failed {
+            background: rgba(239,68,68,0.2);
+            color: #fca5a5;
+        }
+        .pill.scheduled {
+            background: rgba(59,130,246,0.2);
+            color: #93c5fd;
+        }
+        .actions {
+            display: flex;
+            gap: 0.6rem;
+            margin-top: 0.8rem;
+            flex-wrap: wrap;
+        }
+        .small {
+            padding: 0.55rem 0.8rem;
+            border-radius: 12px;
+            font-size: 0.9rem;
+        }
+        .banner {
+            margin-top: 1rem;
+            padding: 0.9rem 1rem;
+            border-radius: 16px;
+            background: rgba(250, 204, 21, 0.12);
+            border: 1px solid rgba(250, 204, 21, 0.2);
+            color: #fde68a;
+            line-height: 1.5;
+        }
+        .success-banner {
+            margin-top: 1rem;
+            padding: 0.9rem 1rem;
+            border-radius: 16px;
+            background: rgba(34, 197, 94, 0.14);
+            border: 1px solid rgba(34, 197, 94, 0.26);
+            color: #bbf7d0;
+            line-height: 1.5;
+            display: none;
+        }
+        .oauth-card {
+            display: grid;
+            gap: 0.8rem;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            border-radius: 18px;
+            background: rgba(15,23,42,0.45);
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .oauth-actions {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .oauth-status {
+            color: rgba(255,255,255,0.75);
+            font-size: 0.92rem;
+            line-height: 1.5;
+        }
+        .queue-card {
+            background: linear-gradient(180deg, rgba(148,163,184,0.16), rgba(15,23,42,0.42));
+            border: 1px solid rgba(255,255,255,0.10);
+            border-radius: 22px;
+            padding: 1rem;
+            display: grid;
+            gap: 0.9rem;
+        }
+        .queue-card-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 0.8rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .queue-date {
+            color: rgba(255,255,255,0.82);
+            font-size: 0.92rem;
+            font-weight: 600;
+        }
+        .queue-type {
+            background: rgba(34,211,238,0.18);
+            color: #67e8f9;
+            border: 1px solid rgba(34,211,238,0.18);
+            padding: 0.35rem 0.8rem;
+            border-radius: 999px;
+            font-size: 0.76rem;
+            font-weight: 700;
+            text-transform: lowercase;
+        }
+        .queue-copy {
+            color: rgba(255,255,255,0.95);
+            font-size: 0.95rem;
+            line-height: 1.65;
+            font-weight: 500;
+        }
+        .queue-metrics {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.75rem;
+            padding: 0.9rem 1rem;
+            border-radius: 16px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .metric-label {
+            color: rgba(255,255,255,0.58);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            font-size: 0.72rem;
+            font-weight: 700;
+            margin-bottom: 0.3rem;
+        }
+        .metric-value {
+            color: #22d3ee;
+            font-size: 1.02rem;
+            font-weight: 800;
+        }
+        .queue-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.55rem;
+            flex-wrap: wrap;
+        }
+        .queue-btn {
+            padding: 0.55rem 0.9rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.16);
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .queue-btn.primary {
+            background: linear-gradient(135deg, #06b6d4, #2563eb);
+            border: none;
+        }
+        .queue-btn:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+        .queue-status-line {
+            color: rgba(255,255,255,0.68);
+            font-size: 0.86rem;
+        }
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(2,6,23,0.72);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            z-index: 50;
+        }
+        .modal-card {
+            width: min(760px, 100%);
+            background: linear-gradient(180deg, rgba(30,41,59,0.98), rgba(15,23,42,0.98));
+            border: 1px solid rgba(255,255,255,0.10);
+            border-radius: 24px;
+            padding: 1.25rem;
+            display: grid;
+            gap: 1rem;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.42);
+        }
+        .modal-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+        .modal-head h3 {
+            font-size: 1.2rem;
+        }
+        .modal-close {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.14);
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            color: #fff;
+            font-size: 1.1rem;
+            cursor: pointer;
+        }
+        .modal-card textarea {
+            min-height: 240px;
+        }
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.7rem;
+            flex-wrap: wrap;
+        }
+        .auth-card {
+            display: grid;
+            gap: 1rem;
+            padding: 1.25rem;
+            border-radius: 20px;
+            border: 1px solid rgba(140, 163, 255, 0.28);
+            background: rgba(7, 12, 28, 0.8);
+            margin-bottom: 0.85rem;
+        }
+        .auth-title {
+            font-size: 1.9rem;
+            letter-spacing: -0.02em;
+        }
+        .auth-row {
+            display: grid;
+            gap: 0.7rem;
+        }
+        .auth-row label {
+            color: rgba(182, 200, 255, 0.86);
+            font-size: 0.92rem;
+        }
+        .auth-row input {
+            border-radius: 999px;
+            padding: 0.95rem 1rem;
+            border: 1px solid rgba(118, 145, 255, 0.72);
+            background: rgba(11, 17, 38, 0.78);
+            color: #eef4ff;
+            outline: none;
+        }
+        .auth-row input:focus {
+            box-shadow: 0 0 0 3px rgba(95, 132, 255, 0.24);
+        }
+        .auth-actions {
+            display: grid;
+            gap: 0.65rem;
+        }
+        .auth-divider {
+            text-align: center;
+            color: rgba(187, 203, 246, 0.78);
+            font-size: 0.86rem;
+            position: relative;
+        }
+        .auth-divider::before,
+        .auth-divider::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 38%;
+            height: 1px;
+            background: rgba(255,255,255,0.12);
+        }
+        .auth-divider::before {
+            left: 0;
+        }
+        .auth-divider::after {
+            right: 0;
+        }
+        .auth-status {
+            font-size: 0.92rem;
+            color: rgba(208, 223, 255, 0.92);
+        }
+        .auth-session {
+            font-size: 0.85rem;
+            color: rgba(156, 179, 230, 0.94);
+        }
+        .auth-foot {
+            font-size: 0.88rem;
+            color: rgba(179, 197, 239, 0.92);
+            text-align: center;
+        }
+        .small-btn {
+            padding: 0.8rem 1rem;
+            border-radius: 999px;
+            border: 1px solid rgba(255,255,255,0.14);
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+        }
+        .small-btn.primary {
+            background: #f3f4f8;
+            color: #0a132b;
+            border-color: rgba(255, 255, 255, 0.75);
+        }
+        @media (max-width: 960px) {
+            .span-4, .span-5, .span-7, .span-12 { grid-column: span 12; }
+            .row-2 { grid-template-columns: 1fr; }
+            .queue-metrics { grid-template-columns: 1fr; }
+        }
+</style>
+
+</head>
+<body>
+    <div class="container">
+        <div class="topbar">
+            <a class="nav-link" href="/index.html?skipIntro=1">Back to Home</a>
+            <a class="nav-link" href="/generator.html?platform=linkedin">Open Generator</a>
+        </div>
+
+        <section class="hero">
+            <h1>Publishing Hub</h1>
+            <p>Connect a LinkedIn account, auto-generate 7 to 10 posts per week, and publish on a schedule.</p>
+        </section>
+
+        <div class="banner">
+            LinkedIn publishing uses direct user login so the user can connect the right account before scheduling posts.
+        </div>
+
+        <div class="success-banner" id="oauthBanner"></div>
+
+        <div class="grid">
+            <section class="card span-5">
+                <h2>Connect Accounts</h2>
+                <p>Use LinkedIn login to connect the account that should be used for scheduling and publishing.</p>
+                <div class="auth-card">
+                    <h3 class="auth-title">Session Required</h3>
+                    <div class="auth-status" id="authStatus">Checking active session...</div>
+                    <div class="auth-session" id="authSessionLabel">No active session.</div>
+                    <div class="auth-actions">
+                        <a class="small-btn" id="authBackToLogin" href="/auth.html?next=/publisher.html">Go To Sign In</a>
+                        <button type="button" class="small-btn" id="authSignOutBtn" style="display:none;">Sign Out</button>
+                    </div>
+                </div>
+                <div class="oauth-card">
+                    <h3>LinkedIn Account Connection</h3>
+                    <div class="oauth-status" id="linkedinOAuthStatus">Checking LinkedIn OAuth status...</div>
+                    <div class="oauth-actions">
+                        <a id="linkedinLoginBtn" href="/auth/linkedin/start?next=publisher" style="display:inline-block; background: linear-gradient(135deg, #0a66c2, #004182); border: none; cursor: pointer; color: #fff; font-weight: 600; padding: 0.85rem 1.4rem; border-radius: 999px; text-decoration: none;">
+                            Connect with LinkedIn
+                        </a>
+                    </div>
+                    <div class="meta">Connects your LinkedIn account using direct OAuth and saves your publishing access token automatically.</div>
+                </div>
+                <div class="oauth-card">
+                    <h3>Telegram Confirmations</h3>
+                    <div class="oauth-status" id="telegramStatus">Checking Telegram link status...</div>
+                    <div class="oauth-actions">
+                        <a id="telegramLinkBtn" href="#" target="_blank" rel="noopener" style="display:inline-block; background: linear-gradient(135deg, #29a9eb, #0088cc); border: none; cursor: pointer; color: #fff; font-weight: 600; padding: 0.85rem 1.4rem; border-radius: 999px; text-decoration: none;">
+                            Link Telegram
+                        </a>
+                        <button type="button" class="small-btn" id="telegramUnlinkBtn" style="display:none;">Unlink</button>
+                    </div>
+                    <div class="meta">Before a scheduled post goes out, PostCraft AI sends you 3 options on Telegram — tap one to generate and publish it.</div>
+                </div>
+            </section>
+
+            <section class="card span-7">
+                <h2>Create Weekly Schedule</h2>
+                <p>Generate a weekly publishing queue from your business context. The scheduler can spread 7 to 10 items per week across the selected platform.</p>
+                <form id="scheduleForm">
+                    <div class="row-2">
+                        <label>Platform
+                            <select name="platform" id="schedulePlatform">
+                                <option value="linkedin">LinkedIn</option>
+                            </select>
+                        </label>
+                        <label>Connected Account
+                            <select name="accountId" id="accountId" required></select>
+                        </label>
+                    </div>
+                    <div class="row-2">
+                        <label>Posts Per Week
+                            <select name="postsPerWeek">
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="10">10</option>
+                            </select>
+                        </label>
+                        <label>Preferred Hour
+                            <input type="number" name="preferredHour" min="0" max="23" value="10">
+                        </label>
+                    </div>
+                    <div class="row-2">
+                        <label>Start Date
+                            <input type="date" name="startDate" id="startDate">
+                        </label>
+                        <label>End Date
+                            <input type="date" name="endDate" id="endDate">
+                        </label>
+                    </div>
+
+
+                    <!-- Content Category Pattern per Day Range -->
+                    <div style="background: rgba(15,23,42,0.45); border: 1px solid rgba(255,255,255,0.12); border-radius: 18px; padding: 1.25rem; margin-top: 0.5rem; margin-bottom: 0.5rem;">
+                        <h3 style="font-size: 1rem; color: #fff; margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.5rem;">
+                            📰 Content Category Pattern per Day Range
+                        </h3>
+                        <div style="display: flex; gap: 0.75rem; margin-bottom: 1rem;">
+                            <button type="button" class="secondary" id="schedModeRotation" onclick="setSchedPatternMode('rotation')" style="flex:1; background: rgba(6,182,212,0.25); border-color: #06b6d4; color: #67e8f9;">
+                                🔄 Rotation Mode (Repeating Order)
+                            </button>
+                            <button type="button" class="secondary" id="schedModeBlock" onclick="setSchedPatternMode('block')" style="flex:1; opacity:0.6;">
+                                📦 Block Mode (Single Category)
+                            </button>
+                        </div>
+
+                        <!-- Rotation Sequence View -->
+                        <div id="schedRotationContainer">
+                            <label style="font-size: 0.85rem; color: rgba(255,255,255,0.7); margin-bottom: 0.5rem; display: block;">
+                                Daily Category Sequence (Day 1 → Day 2 → Day 3...):
+                            </label>
+                            <div id="schedCategoryChips" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;"></div>
+                            <div style="display: flex; gap: 0.4rem; align-items: center;">
+                                <span style="font-size: 0.8rem; color: rgba(255,255,255,0.6);">Add step:</span>
+                                <button type="button" onclick="addSchedCategory('tech')" class="secondary small">+ Tech</button>
+                                <button type="button" onclick="addSchedCategory('science')" class="secondary small">+ Science</button>
+                                <button type="button" onclick="addSchedCategory('dental')" class="secondary small">+ Dental</button>
+                            </div>
+                        </div>
+
+                        <!-- Block Mode View -->
+                        <div id="schedBlockContainer" style="display: none;">
+                            <label>Fixed Category for All Days:
+                                <select id="schedSingleCategory">
+                                    <option value="tech">Tech (TechCrunch Feed)</option>
+                                    <option value="science">Science (ScienceDaily Feed)</option>
+                                    <option value="dental">Dental (Dentistry Today Feed)</option>
+                                </select>
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="submit">Create Schedule And Generate Queue</button>
+                </form>
+            </section>
+
+            <section class="card span-4">
+                <h2>Connected Accounts</h2>
+                <div id="accountsList" class="list"></div>
+            </section>
+
+            <section class="card span-4">
+                <h2>Weekly Schedules</h2>
+                <div id="schedulesList" class="list"></div>
+            </section>
+
+            <section class="card span-4">
+                <h2>Publishing Queue</h2>
+                <div id="queueList" class="list"></div>
+            </section>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="queueEditorModal">
+        <div class="modal-card">
+            <div class="modal-head">
+                <h3>Edit Queue Post</h3>
+                <button class="modal-close" id="queueEditorClose" type="button">×</button>
+            </div>
+            <div class="meta" id="queueEditorMeta">Update the scheduled post content before publishing.</div>
+            <textarea id="queueEditorContent" placeholder="Edit the post content here"></textarea>
+            <div class="modal-actions">
+                <button class="queue-btn" id="queueEditorCancel" type="button">Cancel</button>
+                <button class="queue-btn primary" id="queueEditorSave" type="button">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Real, verifiable identity: signing in on /auth.html set an httpOnly
+         cookie that the browser sends automatically with every request
+         below — index.js re-verifies its signature on every call (see
+         requireAuth in index.js and services/oauthService.js). Nothing here
+         is trusted just because the client sent it. -->
+    <script>
+        function getLinkedInStartUrl(next, force) {
+            return `/auth/linkedin/start?next=${encodeURIComponent(next || 'publisher')}${force ? '&force=1' : ''}`;
+        }
+
+        const apiEndpoints = {
+            publishingOverview: '/publishing/overview',
+            publishingProviders: '/publishing/providers',
+            publishingSchedules: '/publishing/schedules',
+            publishingAccounts: '/publishing/accounts',
+            publishQueueItem: (queueItemId) => `/publishing/queue/${encodeURIComponent(queueItemId)}/publish`,
+            updateQueueItem: (queueItemId) => `/publishing/queue/${encodeURIComponent(queueItemId)}`,
+            get linkedInLogin() { return getLinkedInStartUrl('publisher', true); }
+        };
+
+        const scheduleForm = document.getElementById('scheduleForm');
+        const accountIdSelect = document.getElementById('accountId');
+        const schedulePlatformSelect = document.getElementById('schedulePlatform');
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
+
+        const oauthBanner = document.getElementById('oauthBanner');
+        const authStatus = document.getElementById('authStatus');
+        const authSessionLabel = document.getElementById('authSessionLabel');
+        const authBackToLogin = document.getElementById('authBackToLogin');
+        const authSignOutBtn = document.getElementById('authSignOutBtn');
+        const linkedinOAuthStatus = document.getElementById('linkedinOAuthStatus');
+        const linkedinLoginBtn = document.getElementById('linkedinLoginBtn');
+        const telegramStatus = document.getElementById('telegramStatus');
+        const telegramLinkBtn = document.getElementById('telegramLinkBtn');
+        const telegramUnlinkBtn = document.getElementById('telegramUnlinkBtn');
+        const queueEditorModal = document.getElementById('queueEditorModal');
+        const queueEditorContent = document.getElementById('queueEditorContent');
+        const queueEditorMeta = document.getElementById('queueEditorMeta');
+        const queueEditorClose = document.getElementById('queueEditorClose');
+        const queueEditorCancel = document.getElementById('queueEditorCancel');
+        const queueEditorSave = document.getElementById('queueEditorSave');
+        let allAccounts = [];
+        let currentQueue = [];
+        let editingQueueItemId = '';
+        let isSignedIn = false;
+
+        const today = new Date();
+        const defaultEndDate = new Date(today);
+        defaultEndDate.setDate(defaultEndDate.getDate() + 27);
+
+        startDateInput.value = today.toISOString().split('T')[0];
+        endDateInput.value = defaultEndDate.toISOString().split('T')[0];
+
+        function updateLinkedInLoginHref() {
+            linkedinLoginBtn.href = apiEndpoints.linkedInLogin;
+        }
+
+        function setAuthStatus(message, isError = false) {
+            authStatus.textContent = message;
+            authStatus.style.color = isError ? '#fecaca' : 'rgba(208, 223, 255, 0.92)';
+        }
+
+        function setProtectedUiEnabled(isEnabled) {
+            scheduleForm.querySelectorAll('input, select, textarea, button').forEach((element) => {
+                if (element === authSignOutBtn) {
+                    return;
+                }
+                element.disabled = !isEnabled;
+            });
+
+            linkedinLoginBtn.style.pointerEvents = isEnabled ? 'auto' : 'none';
+            linkedinLoginBtn.style.opacity = isEnabled ? '1' : '0.55';
+        }
+
+        function setSessionState(signedIn, email = '') {
+            isSignedIn = Boolean(signedIn);
+            email = String(email || '').trim();
+
+            // Cosmetic-only markers (welcome text, skip-intro) — never used
+            // for authorization. Real identity is the access token itself.
+            if (isSignedIn && email) {
+                localStorage.setItem('postcraftSignedIn', '1');
+                localStorage.setItem('postcraftUserEmail', email);
+                localStorage.setItem('postcraftUserName', email.split('@')[0]);
+            }
+
+            authSessionLabel.textContent = email
+                ? `Signed in as ${email}`
+                : 'No active session.';
+
+            authSignOutBtn.style.display = isSignedIn ? 'block' : 'none';
+            authSignOutBtn.disabled = !isSignedIn;
+            authBackToLogin.style.display = isSignedIn ? 'none' : 'block';
+            setProtectedUiEnabled(isSignedIn);
+            updateLinkedInLoginHref();
+        }
+
+        function showOAuthBanner(message, isError = false) {
+            oauthBanner.style.display = 'block';
+            oauthBanner.textContent = message;
+
+            if (isError) {
+                oauthBanner.style.background = 'rgba(239, 68, 68, 0.14)';
+                oauthBanner.style.borderColor = 'rgba(239, 68, 68, 0.26)';
+                oauthBanner.style.color = '#fecaca';
+                return;
+            }
+
+            oauthBanner.style.background = 'rgba(34, 197, 94, 0.14)';
+            oauthBanner.style.borderColor = 'rgba(34, 197, 94, 0.26)';
+            oauthBanner.style.color = '#bbf7d0';
+        }
+
+        async function readJsonResponse(response) {
+            const raw = await response.text();
+
+            try {
+                return JSON.parse(raw);
+            } catch (error) {
+                if (!response.ok) {
+                    throw new Error(`Request failed with status ${response.status}.`);
+                }
+
+                throw new Error('The server returned an invalid response.');
+            }
+        }
+
+        // Fetch wrapper - sends the signed-in user's Supabase access token.
+        // The cookie set at sign-in is sent automatically by the browser on
+        // same-origin requests — nothing to attach here. The server
+        // re-verifies its signature on every request (see requireAuth in
+        // index.js), so a request with no cookie, or a tampered one, is
+        // rejected regardless of what this function does.
+        async function authFetch(url, options = {}) {
+            return fetch(url, options);
+        }
+
+        async function loadCountryOptions() {
+            // Country options are pre-populated in the HTML (US, IN etc.)
+            // No remote endpoint needed for this local setup.
+        }
+
+        async function loadProviderStatus() {
+            try {
+                // First check if there is already a connected LinkedIn account
+                const overviewRes = await authFetch(apiEndpoints.publishingOverview);
+                const overview = await readJsonResponse(overviewRes);
+                const connectedAccount = [...(overview.accounts || [])].reverse().find(
+                    (a) => a.platform === 'linkedin' && a.status === 'connected'
+                );
+
+                if (connectedAccount) {
+                    updateLinkedInConnectionCard(connectedAccount);
+                    return;
+                }
+
+                // No account yet — show the connect button
+                const response = await fetch(apiEndpoints.publishingProviders);
+                const result = await readJsonResponse(response);
+                const linkedIn = result.providers?.linkedin;
+
+                if (linkedIn?.oauthConfigured) {
+                    linkedinOAuthStatus.textContent = 'LinkedIn OAuth is ready. Click the button to connect.';
+                } else {
+                    linkedinOAuthStatus.textContent = 'LinkedIn OAuth credentials not configured on server.';
+                }
+            } catch (error) {
+                linkedinOAuthStatus.textContent = 'LinkedIn OAuth status unavailable.';
+            }
+        }
+
+        async function loadTelegramStatus() {
+            try {
+                const response = await authFetch('/telegram/status');
+                const result = await readJsonResponse(response);
+
+                if (!result.success) {
+                    telegramStatus.textContent = 'Telegram status unavailable.';
+                    return;
+                }
+
+                if (!result.botTokenConfigured) {
+                    telegramStatus.textContent = 'Telegram bot is not configured on this server.';
+                    telegramLinkBtn.style.display = 'none';
+                    return;
+                }
+
+                if (result.linked) {
+                    telegramStatus.textContent = '✅ Telegram is linked. Scheduled posts will be sent here for confirmation.';
+                    telegramStatus.style.color = '#86efac';
+                    telegramLinkBtn.style.display = 'none';
+                    telegramUnlinkBtn.style.display = 'inline-block';
+                } else {
+                    telegramStatus.textContent = 'Not linked yet — tap Link Telegram, then press Start in the chat that opens.';
+                    telegramLinkBtn.style.display = 'inline-block';
+                    telegramUnlinkBtn.style.display = 'none';
+                }
+            } catch (error) {
+                telegramStatus.textContent = 'Telegram status unavailable.';
+            }
+        }
+
+        async function requestTelegramLink() {
+            try {
+                telegramStatus.textContent = 'Generating your link...';
+                const response = await authFetch('/telegram/link', { method: 'POST' });
+                const result = await readJsonResponse(response);
+
+                if (!result.success) {
+                    telegramStatus.textContent = result.error || 'Could not generate a Telegram link.';
+                    return;
+                }
+
+                window.open(result.linkUrl, '_blank', 'noopener');
+                telegramStatus.textContent = 'Opened Telegram — press Start in the chat, then come back here.';
+                setTimeout(() => loadTelegramStatus(), 4000);
+            } catch (error) {
+                telegramStatus.textContent = 'Could not generate a Telegram link.';
+            }
+        }
+
+        async function unlinkTelegram() {
+            try {
+                await authFetch('/telegram/unlink', { method: 'POST' });
+                await loadTelegramStatus();
+            } catch (error) {
+                telegramStatus.textContent = 'Could not unlink Telegram.';
+            }
+        }
+
+        function updateLinkedInConnectionCard(account) {
+            linkedinOAuthStatus.textContent = `✅ Connected as ${account.displayName}${account.email ? ' (' + account.email + ')' : ''}`;
+            linkedinOAuthStatus.style.color = '#86efac';
+
+            const loginBtn = document.getElementById('linkedinLoginBtn');
+            if (loginBtn) {
+                loginBtn.textContent = 'Reconnect LinkedIn';
+                loginBtn.href = getLinkedInStartUrl('publisher', true);
+                loginBtn.style.background = 'rgba(34,197,94,0.15)';
+                loginBtn.style.border = '1px solid rgba(34,197,94,0.4)';
+                loginBtn.style.color = '#86efac';
+                loginBtn.style.fontSize = '0.92rem';
+            }
+        }
+
+        async function checkSession() {
+            try {
+                const response = await fetch('/auth/session');
+                if (!response.ok) {
+                    return null;
+                }
+                const data = await response.json();
+                return data.success ? data.user : null;
+            } catch (error) {
+                return null;
+            }
+        }
+
+        async function initAuth() {
+            const user = await checkSession();
+
+            if (!user) {
+                setSessionState(false);
+                setAuthStatus('Sign in required. Redirecting...', true);
+                setTimeout(() => { window.location.href = '/auth.html?next=/publisher.html'; }, 1200);
+                return;
+            }
+
+            setSessionState(true, user.email || user.displayName || 'LinkedIn User');
+            setAuthStatus('Signed in. Your publishing data is loaded below.');
+        }
+
+        async function signOut() {
+            await fetch('/auth/logout', { method: 'POST' });
+            localStorage.removeItem('postcraftSignedIn');
+            localStorage.removeItem('postcraftUserEmail');
+            localStorage.removeItem('postcraftUserName');
+            setSessionState(false);
+            allAccounts = [];
+            currentQueue = [];
+            document.getElementById('accountsList').innerHTML = '<div class="meta">Sign in to view accounts.</div>';
+            document.getElementById('schedulesList').innerHTML = '<div class="meta">Sign in to view schedules.</div>';
+            document.getElementById('queueList').innerHTML = '<div class="meta">Sign in to view queue items.</div>';
+            setAuthStatus('Signed out.');
+            setTimeout(() => { window.location.href = '/auth.html'; }, 800);
+        }
+
+        function handleOAuthResult() {
+            const params = new URLSearchParams(window.location.search);
+            const linkedInStatus = params.get('linkedin');
+            const message = params.get('message');
+
+            if (!linkedInStatus) {
+                return;
+            }
+
+            if (linkedInStatus === 'connected') {
+                showOAuthBanner('LinkedIn account connected successfully. The user can use it for scheduling now.');
+                setTimeout(() => refreshOverview(), 100);
+            } else {
+                showOAuthBanner(message || 'LinkedIn login did not complete successfully.', true);
+            }
+
+            params.delete('linkedin');
+            params.delete('message');
+
+            const query = params.toString();
+            const cleanUrl = `${window.location.pathname}${query ? `?${query}` : ''}`;
+            window.history.replaceState({}, document.title, cleanUrl);
+        }
+
+        async function fetchOverview() {
+            const response = await authFetch(apiEndpoints.publishingOverview);
+            return readJsonResponse(response);
+        }
+
+        function escapeHtml(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function formatQueueType(item) {
+            if (item.metadata?.holiday) {
+                return item.metadata.holiday;
+            }
+
+            const rawType = item.metadata?.postType || item.metadata?.type || 'scheduled';
+            return rawType.replace(/_/g, ' ');
+        }
+
+        function countHashtags(content) {
+            return (String(content || '').match(/#\w+/g) || []).length;
+        }
+
+        function calculateEngagementScore(content, item) {
+            let score = 72;
+            const text = String(content || '');
+
+            if (item.metadata?.holiday) score += 14;
+            if (text.length >= 90 && text.length <= 320) score += 12;
+            else if (text.length > 500) score -= 8;
+
+            const hashtagCount = countHashtags(text);
+            score += Math.min(hashtagCount * 3, 15);
+
+            if (/[?]/.test(text)) score += 4;
+            if (/[!]/.test(text)) score += 3;
+
+            const ctaWords = ['comment', 'share', 'learn', 'discover', 'connect', 'visit'];
+            if (ctaWords.some((word) => text.toLowerCase().includes(word))) {
+                score += 8;
+            }
+
+            return Math.max(58, Math.min(score, 99));
+        }
+
+        function renderAccounts(accounts) {
+            const container = document.getElementById('accountsList');
+            allAccounts = accounts;
+
+            // Auto-update the LinkedIn connection card based on connected accounts
+            const connectedLinkedIn = [...accounts].reverse().find(
+                (a) => a.platform === 'linkedin' && a.status === 'connected'
+            );
+            if (connectedLinkedIn) {
+                updateLinkedInConnectionCard(connectedLinkedIn);
+            }
+
+            if (!accounts.length) {
+                container.innerHTML = '<div class="meta">No connected accounts yet. Click "Connect with LinkedIn" above to get started.</div>';
+                accountIdSelect.innerHTML = '<option value="">Add an account first</option>';
+                return;
+            }
+
+            updateAccountOptions();
+
+            container.innerHTML = accounts.map((account) => `
+                <article class="list-item">
+                    <span class="pill">${account.platform}</span>
+                    <h3>${account.displayName}</h3>
+                    <div class="meta">
+                        ${account.email ? `Email: ${account.email}<br>` : ''}
+                        Status: ${account.status}${account.authType ? ` (${account.authType})` : ''}<br>
+                        Saved: ${new Date(account.createdAt).toLocaleString()}
+                    </div>
+                </article>
+            `).join('');
+        }
+
+        function updateAccountOptions() {
+            const selectedPlatform = schedulePlatformSelect.value;
+            const matchingAccounts = allAccounts.filter((account) => account.platform === selectedPlatform);
+
+            if (!matchingAccounts.length) {
+                accountIdSelect.innerHTML = `<option value="">No ${selectedPlatform} account connected</option>`;
+                return;
+            }
+
+            accountIdSelect.innerHTML = matchingAccounts.map((account) => `
+                <option value="${account.id}">${account.displayName} (${account.platform})</option>
+            `).join('');
+        }
+
+        function renderSchedules(schedules) {
+            const container = document.getElementById('schedulesList');
+            if (!schedules.length) {
+                container.innerHTML = '<div class="meta">No schedules yet.</div>';
+                return;
+            }
+
+            container.innerHTML = schedules.map((schedule) => `
+                <article class="list-item">
+                    <span class="pill scheduled">${schedule.platform}</span>
+                    <h3>${schedule.companyName}</h3>
+                    <div class="meta">
+                        ${schedule.postsPerWeek} posts/week<br>
+                        Preferred hour: ${schedule.preferredHour}:00<br>
+                        Start: ${new Date(schedule.startDate).toLocaleDateString()}<br>
+                        End: ${schedule.endDate ? new Date(schedule.endDate).toLocaleDateString() : 'Open-ended'}
+                    </div>
+                </article>
+            `).join('');
+        }
+
+        function renderQueueItemCard(item) {
+            const scheduledDate = new Date(item.scheduledFor);
+            const shortDate = scheduledDate.toLocaleDateString();
+            const fullDate = scheduledDate.toLocaleDateString(undefined, {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                weekday: 'long'
+            });
+            const type = formatQueueType(item);
+            const rawContent = String(item.content || 'Content will be generated automatically when this scheduled item is published.');
+            const preview = rawContent.length > 340 ? `${rawContent.slice(0, 340)}...` : rawContent;
+            const escapedPreview = escapeHtml(preview).replace(/\n/g, '<br>');
+            const hashtagCount = countHashtags(rawContent);
+            const engagementScore = calculateEngagementScore(rawContent, item);
+            const isPublished = item.status === 'published';
+            const isPublishing = item.status === 'publishing';
+            const isPendingConfirmation = item.status === 'pending_confirmation';
+            const statusClass = item.status === 'failed' ? 'failed' : (item.status === 'scheduled' || isPendingConfirmation) ? 'scheduled' : '';
+            const statusLine = item.error
+                ? `Error: ${escapeHtml(item.error)}`
+                : isPublished
+                    ? 'Published successfully.'
+                    : isPublishing
+                        ? 'Publishing now...'
+                        : isPendingConfirmation
+                            ? 'Sent to Telegram \u2014 waiting for you to pick one of the 3 options.'
+                            : item.metadata?.contentStatus === 'edited'
+                                ? 'Edited manually. Ready for publish.'
+                                : 'Ready for publish.';
+
+            return `
+                <article class="queue-card">
+                    <div class="queue-card-top">
+                        <div class="queue-date">${shortDate}</div>
+                        <div class="actions">
+                            <span class="pill ${statusClass}">${escapeHtml(item.status)}</span>
+                            <span class="queue-type">${escapeHtml(type)}</span>
+                        </div>
+                    </div>
+                    <div class="queue-copy">
+                        📅 ${escapeHtml(fullDate)} - <strong>${escapeHtml(type.toUpperCase())}</strong> ${escapedPreview}
+                    </div>
+                    <div class="queue-metrics">
+                        <div>
+                            <div class="metric-label">Length</div>
+                            <div class="metric-value">${rawContent.length} chars</div>
+                        </div>
+                        <div>
+                            <div class="metric-label">Hashtags</div>
+                            <div class="metric-value">${hashtagCount}</div>
+                        </div>
+                        <div>
+                            <div class="metric-label">Engagement Score</div>
+                            <div class="metric-value">${engagementScore}%</div>
+                        </div>
+                    </div>
+                    <div class="queue-status-line">${statusLine}</div>
+                    <div class="queue-actions">
+                        <button class="queue-btn" type="button" onclick="copyQueueItem('${item.id}')">Copy</button>
+                        <button class="queue-btn" type="button" onclick="openQueueEditor('${item.id}')">Edit</button>
+                        <button class="queue-btn primary" type="button" onclick="publishNow('${item.id}')" ${isPublished || isPublishing || isPendingConfirmation ? 'disabled' : ''}>
+                            ${isPublished ? 'Published' : isPublishing ? 'Publishing...' : isPendingConfirmation ? 'Awaiting Telegram' : 'Publish Now'}
+                        </button>
+                    </div>
+                </article>
+            `;
+        }
+
+        function renderQueue(queue) {
+            const container = document.getElementById('queueList');
+            currentQueue = [...queue].sort((a, b) => new Date(a.scheduledFor) - new Date(b.scheduledFor));
+            if (!queue.length) {
+                container.innerHTML = '<div class="meta">No queue items yet.</div>';
+                return;
+            }
+
+            const sorted = currentQueue;
+            container.innerHTML = sorted.slice(0, 12).map(renderQueueItemCard).join('');
+        }
+
+        async function refreshOverview() {
+            if (!isSignedIn) {
+                renderAccounts([]);
+                renderSchedules([]);
+                renderQueue([]);
+                return;
+            }
+
+            const overview = await fetchOverview();
+            renderAccounts(overview.accounts || []);
+            renderSchedules(overview.schedules || []);
+            renderQueue(overview.queue || []);
+        }
+
+        let schedPatternMode = 'rotation';
+        let schedCategorySequence = ['tech', 'science', 'dental'];
+
+        function setSchedPatternMode(mode) {
+            schedPatternMode = mode;
+            const rotBtn = document.getElementById('schedModeRotation');
+            const blkBtn = document.getElementById('schedModeBlock');
+            const rotDiv = document.getElementById('schedRotationContainer');
+            const blkDiv = document.getElementById('schedBlockContainer');
+
+            if (mode === 'rotation') {
+                rotBtn.style.background = 'rgba(6,182,212,0.25)';
+                rotBtn.style.borderColor = '#06b6d4';
+                rotBtn.style.color = '#67e8f9';
+                rotBtn.style.opacity = '1';
+                blkBtn.style.background = 'rgba(255,255,255,0.12)';
+                blkBtn.style.borderColor = 'rgba(255,255,255,0.14)';
+                blkBtn.style.opacity = '0.6';
+                rotDiv.style.display = 'block';
+                blkDiv.style.display = 'none';
+            } else {
+                blkBtn.style.background = 'rgba(6,182,212,0.25)';
+                blkBtn.style.borderColor = '#06b6d4';
+                blkBtn.style.color = '#67e8f9';
+                blkBtn.style.opacity = '1';
+                rotBtn.style.background = 'rgba(255,255,255,0.12)';
+                rotBtn.style.borderColor = 'rgba(255,255,255,0.14)';
+                rotBtn.style.opacity = '0.6';
+                rotDiv.style.display = 'none';
+                blkDiv.style.display = 'block';
+            }
+        }
+
+        function renderSchedCategoryChips() {
+            const container = document.getElementById('schedCategoryChips');
+            if (!container) return;
+            container.innerHTML = '';
+            const categoryLabels = { tech: 'Tech', science: 'Science', dental: 'Dental' };
+
+            schedCategorySequence.forEach((cat, index) => {
+                const chip = document.createElement('div');
+                chip.style.cssText = 'display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.8rem; background: rgba(59,130,246,0.25); border: 1px solid rgba(59,130,246,0.4); border-radius: 999px; font-size: 0.85rem; color: #93c5fd;';
+                chip.innerHTML = `
+                    <span>Day ${index + 1}: ${categoryLabels[cat] || cat}</span>
+                    <button type="button" onclick="moveSchedCategory(${index}, -1)" style="background:none; border:none; color:#fff; cursor:pointer; padding:0 2px;">↑</button>
+                    <button type="button" onclick="moveSchedCategory(${index}, 1)" style="background:none; border:none; color:#fff; cursor:pointer; padding:0 2px;">↓</button>
+                    <button type="button" onclick="removeSchedCategory(${index})" style="background:none; border:none; color:#fca5a5; cursor:pointer; padding:0 2px;">✕</button>
+                `;
+                container.appendChild(chip);
+            });
+        }
+
+        function addSchedCategory(cat) {
+            schedCategorySequence.push(cat);
+            renderSchedCategoryChips();
+        }
+
+        function removeSchedCategory(index) {
+            if (schedCategorySequence.length <= 1) return;
+            schedCategorySequence.splice(index, 1);
+            renderSchedCategoryChips();
+        }
+
+        function moveSchedCategory(index, direction) {
+            const target = index + direction;
+            if (target < 0 || target >= schedCategorySequence.length) return;
+            const temp = schedCategorySequence[index];
+            schedCategorySequence[index] = schedCategorySequence[target];
+            schedCategorySequence[target] = temp;
+            renderSchedCategoryChips();
+        }
+
+        scheduleForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const data = Object.fromEntries(new FormData(scheduleForm).entries());
+
+            data.mode = schedPatternMode;
+            data.categories = schedPatternMode === 'rotation'
+                ? schedCategorySequence
+                : [document.getElementById('schedSingleCategory').value];
+
+            if (data.startDate && data.endDate && new Date(data.endDate) < new Date(data.startDate)) {
+                alert('End date must be on or after the start date.');
+                return;
+            }
+
+            try {
+                const response = await authFetch(apiEndpoints.publishingSchedules, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await readJsonResponse(response);
+                if (!result.success) {
+                    alert(result.details || result.error || 'Failed to create schedule');
+                    return;
+                }
+                await refreshOverview();
+            } catch (error) {
+                alert(error.message || 'Failed to create schedule');
+            }
+        });
+
+        async function publishNow(queueItemId) {
+            try {
+                const response = await authFetch(apiEndpoints.publishQueueItem(queueItemId), {
+                    method: 'POST'
+                });
+                const result = await readJsonResponse(response);
+                if (!result.success && result.item?.status !== 'published') {
+                    alert(result.details || result.error || result.item?.error || 'Failed to publish item');
+                }
+                await refreshOverview();
+            } catch (error) {
+                alert(error.message || 'Failed to publish item');
+            }
+        }
+
+        function closeQueueEditor() {
+            editingQueueItemId = '';
+            queueEditorContent.value = '';
+            queueEditorMeta.textContent = 'Update the scheduled post content before publishing.';
+            queueEditorModal.style.display = 'none';
+        }
+
+        function openQueueEditor(queueItemId) {
+            const item = currentQueue.find((entry) => entry.id === queueItemId);
+            if (!item) {
+                alert('Queue item not found.');
+                return;
+            }
+
+            editingQueueItemId = queueItemId;
+            queueEditorContent.value = item.content || '';
+            queueEditorMeta.textContent = `Editing ${new Date(item.scheduledFor).toLocaleString()} · ${formatQueueType(item)}`;
+            queueEditorModal.style.display = 'flex';
+            queueEditorContent.focus();
+            queueEditorContent.setSelectionRange(queueEditorContent.value.length, queueEditorContent.value.length);
+        }
+
+        async function saveQueueEdit() {
+            const nextContent = queueEditorContent.value.trim();
+            if (!editingQueueItemId) {
+                return;
+            }
+
+            if (!nextContent) {
+                alert('Post content cannot be empty.');
+                return;
+            }
+
+            queueEditorSave.disabled = true;
+            const originalLabel = queueEditorSave.textContent;
+            queueEditorSave.textContent = 'Saving...';
+
+            try {
+                const response = await authFetch(apiEndpoints.updateQueueItem(editingQueueItemId), {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content: nextContent })
+                });
+                const result = await readJsonResponse(response);
+                if (!result.success) {
+                    throw new Error(result.details || result.error || 'Failed to save changes');
+                }
+
+                closeQueueEditor();
+                showOAuthBanner('Queue post updated successfully.');
+                await refreshOverview();
+            } catch (error) {
+                alert(error.message || 'Failed to save changes');
+            } finally {
+                queueEditorSave.disabled = false;
+                queueEditorSave.textContent = originalLabel;
+            }
+        }
+
+        async function copyQueueItem(queueItemId) {
+            const item = currentQueue.find((entry) => entry.id === queueItemId);
+            if (!item) {
+                alert('Queue item not found.');
+                return;
+            }
+
+            const text = String(item.content || '');
+            if (!text.trim()) {
+                alert('There is no generated content to copy yet.');
+                return;
+            }
+
+            try {
+                if (navigator.clipboard?.writeText) {
+                    await navigator.clipboard.writeText(text);
+                } else {
+                    const helper = document.createElement('textarea');
+                    helper.value = text;
+                    helper.setAttribute('readonly', '');
+                    helper.style.position = 'absolute';
+                    helper.style.left = '-9999px';
+                    document.body.appendChild(helper);
+                    helper.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(helper);
+                }
+
+                showOAuthBanner('Queue post copied to clipboard.');
+            } catch (error) {
+                alert('Failed to copy the post content.');
+            }
+        }
+
+        window.publishNow = publishNow;
+        window.openQueueEditor = openQueueEditor;
+        window.copyQueueItem = copyQueueItem;
+        schedulePlatformSelect.addEventListener('change', updateAccountOptions);
+        authSignOutBtn.addEventListener('click', async () => {
+            authSignOutBtn.disabled = true;
+            try {
+                await signOut();
+            } catch (error) {
+                setAuthStatus(error.message || 'Sign out failed.', true);
+            } finally {
+                authSignOutBtn.disabled = false;
+            }
+        });
+        telegramLinkBtn.addEventListener('click', (event) => {
+            event.preventDefault();
+            requestTelegramLink();
+        });
+        telegramUnlinkBtn.addEventListener('click', () => {
+            unlinkTelegram();
+        });
+        queueEditorClose.addEventListener('click', closeQueueEditor);
+        queueEditorCancel.addEventListener('click', closeQueueEditor);
+        queueEditorSave.addEventListener('click', saveQueueEdit);
+        queueEditorModal.addEventListener('click', (event) => {
+            if (event.target === queueEditorModal) {
+                closeQueueEditor();
+            }
+        });
+
+        async function boot() {
+            setProtectedUiEnabled(false);
+            setSessionState(false);
+            handleOAuthResult();
+            loadCountryOptions();
+            renderSchedCategoryChips();
+
+            await initAuth();
+
+            if (isSignedIn) {
+                loadProviderStatus();
+                loadTelegramStatus();
+                refreshOverview();
+            } else {
+                linkedinOAuthStatus.textContent = 'Sign in first to check LinkedIn OAuth status.';
+                telegramStatus.textContent = 'Sign in first to check Telegram status.';
+                renderAccounts([]);
+                renderSchedules([]);
+                renderQueue([]);
+            }
+        }
+
+        boot();
+    </script>
+</body>
+</html>

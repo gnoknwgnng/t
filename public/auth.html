@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PostCraft AI - Sign In</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: radial-gradient(circle at 15% 15%, rgba(67, 56, 202, 0.26), transparent 45%),
+                        radial-gradient(circle at 85% 20%, rgba(59, 130, 246, 0.2), transparent 45%),
+                        #12141c;
+            color: #eef2ff;
+            display: grid;
+            place-items: center;
+            padding: 1.25rem;
+        }
+
+        .shell {
+            width: 100%;
+            max-width: 480px;
+            border: 1px solid rgba(115, 138, 214, 0.34);
+            border-radius: 24px;
+            background: rgba(14, 18, 35, 0.9);
+            padding: 2rem 1.5rem;
+            box-shadow: 0 28px 70px rgba(0, 0, 0, 0.45);
+        }
+
+        h1 {
+            font-size: 2.1rem;
+            margin-bottom: 0.95rem;
+            letter-spacing: -0.02em;
+        }
+
+        .status {
+            color: #b9c8ff;
+            margin-bottom: 0.6rem;
+            min-height: 1.35rem;
+        }
+
+        .session {
+            color: #90a6eb;
+            margin-bottom: 1rem;
+            font-size: 0.95rem;
+            min-height: 1.25rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #9fb2ef;
+        }
+
+        input {
+            width: 100%;
+            border-radius: 999px;
+            border: 1px solid rgba(118, 145, 255, 0.72);
+            background: rgba(11, 17, 38, 0.88);
+            color: #eef4ff;
+            padding: 0.95rem 1rem;
+            outline: none;
+            margin-bottom: 0.85rem;
+        }
+
+        input:focus {
+            box-shadow: 0 0 0 3px rgba(95, 132, 255, 0.24);
+        }
+
+        .btn {
+            width: 100%;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            background: rgba(255, 255, 255, 0.04);
+            color: #fff;
+            padding: 0.82rem 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 0.55rem;
+        }
+
+        .btn.primary {
+            background: #f3f4f8;
+            color: #0a132b;
+            border-color: rgba(255, 255, 255, 0.8);
+        }
+
+        .divider {
+            text-align: center;
+            color: rgba(187, 203, 246, 0.78);
+            font-size: 0.86rem;
+            position: relative;
+            margin: 0.9rem 0;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 38%;
+            height: 1px;
+            background: rgba(255,255,255,0.12);
+        }
+
+        .divider::before { left: 0; }
+        .divider::after { right: 0; }
+
+        .note {
+            margin-top: 0.8rem;
+            color: #9cb0e8;
+            text-align: center;
+            font-size: 0.93rem;
+        }
+
+    </style>
+</head>
+<body>
+    <main class="shell">
+        <h1>Welcome back</h1>
+        <div class="status" id="authStatus">Loading secure sign-in...</div>
+        <div class="session" id="authSessionLabel">No active session.</div>
+
+        <button class="btn" id="authLinkedInBtn" type="button" style="background: linear-gradient(135deg, #0a66c2, #004182); border: none; color: #fff; font-weight: 600; padding: 0.95rem 1rem;">Sign in with LinkedIn</button>
+        <button class="btn" id="authSignOutBtn" type="button" style="display:none;">Sign Out</button>
+
+        <p class="note">Signing in with LinkedIn also connects your account for publishing — one step, no separate password.</p>
+    </main>
+
+    <!-- Real, verifiable identity: signing in here sets an httpOnly cookie
+         that only the server can create or verify (see requireAuth in
+         index.js and services/oauthService.js). It's tied to whichever
+         LinkedIn account you authorize, so a different browser / different
+         Chrome profile / different person has no cookie and gets sent back
+         here to sign in with their own LinkedIn account. -->
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const requestedNext = String(urlParams.get('next') || '').trim();
+        const safeNextPath = requestedNext.startsWith('/') ? requestedNext : '/index.html?skipIntro=1';
+        const linkedinStatus = urlParams.get('linkedin');
+        const linkedinMessage = urlParams.get('message');
+
+        const authStatus = document.getElementById('authStatus');
+        const authSessionLabel = document.getElementById('authSessionLabel');
+        const authLinkedInBtn = document.getElementById('authLinkedInBtn');
+        const authSignOutBtn = document.getElementById('authSignOutBtn');
+
+        let hasRedirectedAfterSignIn = false;
+
+        function setAuthStatus(message, isError = false) {
+            authStatus.textContent = message;
+            authStatus.style.color = isError ? '#fecaca' : '#b9c8ff';
+        }
+
+        function redirectAfterSignIn() {
+            if (hasRedirectedAfterSignIn) return;
+            hasRedirectedAfterSignIn = true;
+            sessionStorage.setItem('postcraftIntroSeen', '1');
+            window.location.href = safeNextPath;
+        }
+
+        // Cosmetic only (welcome text, skip-intro screen) — never used for
+        // authorization. The cookie set by the server is the only thing
+        // that actually grants access to any /publishing/* data.
+        function markSignedInLocally(email) {
+            localStorage.setItem('postcraftSignedIn', '1');
+            localStorage.setItem('postcraftUserEmail', email);
+            localStorage.setItem('postcraftUserName', email ? email.split('@')[0] : 'LinkedIn User');
+        }
+
+        function clearLocalMarkers() {
+            localStorage.removeItem('postcraftSignedIn');
+            localStorage.removeItem('postcraftUserEmail');
+            localStorage.removeItem('postcraftUserName');
+        }
+
+        async function checkSession() {
+            try {
+                const response = await fetch('/auth/session');
+                if (!response.ok) {
+                    return null;
+                }
+                const data = await response.json();
+                return data.success ? data.user : null;
+            } catch (error) {
+                return null;
+            }
+        }
+
+        async function initAuth() {
+            if (linkedinStatus === 'invalid_state' || linkedinStatus === 'failed') {
+                setAuthStatus(`Sign-in with LinkedIn failed: ${linkedinMessage || linkedinStatus}. Please try again.`, true);
+            }
+
+            if (window.location.search) {
+                window.history.replaceState({}, document.title, '/auth.html');
+            }
+
+            const user = await checkSession();
+
+            if (user) {
+                markSignedInLocally(user.email);
+                authSessionLabel.textContent = `Signed in as ${user.displayName || user.email || 'LinkedIn User'}`;
+                authSignOutBtn.style.display = 'block';
+
+                if (linkedinStatus === 'connected') {
+                    setAuthStatus('Signed in successfully. Redirecting...');
+                } else {
+                    setAuthStatus('Session ready. Redirecting...');
+                }
+                setTimeout(() => redirectAfterSignIn(), 400);
+                return;
+            }
+
+            setAuthStatus('Sign in with LinkedIn to continue to PostCraft AI.');
+            authSessionLabel.textContent = 'No active session.';
+        }
+
+        function getLinkedInStartUrl(next) {
+            return `/auth/linkedin/start?next=${encodeURIComponent(next || 'auth')}&force=1`;
+        }
+
+        function continueWithLinkedIn() {
+            setAuthStatus('Redirecting to LinkedIn...');
+            window.location.href = getLinkedInStartUrl('auth');
+        }
+
+        async function signOut() {
+            await fetch('/auth/logout', { method: 'POST' });
+            clearLocalMarkers();
+            authSessionLabel.textContent = 'No active session.';
+            authSignOutBtn.style.display = 'none';
+            setAuthStatus('Signed out. Sign in to continue.');
+        }
+
+        authLinkedInBtn.addEventListener('click', () => continueWithLinkedIn());
+        authSignOutBtn.addEventListener('click', () => signOut());
+
+        initAuth();
+    </script>
+</body>
+</html>
