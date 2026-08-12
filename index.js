@@ -667,6 +667,10 @@ app.post('/generate', generateCalendarHandler);
 // Telegram bot endpoints
 app.get('/telegram/status', requireAuth, async (req, res) => {
     try {
+        if (isVercel) {
+            const siteUrl = getLinkedInOAuthConfig(req).siteUrl;
+            await telegramService.setupWebhook(siteUrl);
+        }
         const profile = await getProfile(req.userContext.userId);
         res.json({
             success: true,

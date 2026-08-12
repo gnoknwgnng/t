@@ -33,6 +33,19 @@ class TelegramService {
         return `https://t.me/${this.botUsername}?start=${encodeURIComponent(code)}`;
     }
 
+    async setupWebhook(siteUrl) {
+        if (!this.isConfigured()) return null;
+        const targetUrl = `${String(siteUrl || '').replace(/\/+$/, '')}/api/telegram/webhook`;
+        try {
+            const response = await axios.get(`${this.baseUrl}/setWebhook`, { params: { url: targetUrl } });
+            console.log(`🤖 [TelegramService] Registered Telegram Webhook to ${targetUrl}:`, response.data);
+            return response.data;
+        } catch (error) {
+            console.error('⚠️ [TelegramService] Failed to set Webhook:', error.response?.data || error.message);
+            return null;
+        }
+    }
+
     async sendMessage(chatId, text, options = {}) {
         if (!chatId) return null;
         try {
