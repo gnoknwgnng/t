@@ -156,9 +156,9 @@ app.post('/session/clear', requireAuth, async (req, res) => {
 
 app.get('/publishing/overview', async (req, res) => {
     try {
-        // The hosted cron only runs once a day, so opening the Publishing Hub
-        // also handles this person's own posts that have come due since
-        // then. Failures here must never stop the page from loading.
+        // Safety net for when the scheduler is not running: opening the
+        // Publishing Hub also handles this person's own posts that are due.
+        // Failures here must never stop the page from loading.
         try {
             await publishDueQueueItems({ limit: 5 }, req.userContext);
         } catch (dueError) {
@@ -837,9 +837,11 @@ app.get('/api/cron/publish', async (req, res) => {
     }
 
     try {
-        // The hosted cron runs once a day, so posts that still need a
-        // Telegram choice are sent for approval for the whole day ahead.
-        const lookaheadHours = Number(process.env.CRON_LOOKAHEAD_HOURS || 24);
+        // Normally a post is handled when its own time arrives; an external
+        // scheduler (cron-job.org) calls this every few minutes for that.
+        // CRON_LOOKAHEAD_HOURS is only for setups that rely on a once-a-day
+        // cron: it sends the Telegram choices that many hours early.
+        const lookaheadHours = Math.max(0, Number(process.env.CRON_LOOKAHEAD_HOURS || 0));
         const result = await publishDueQueueItems(
             { confirmationLookaheadMs: lookaheadHours * 60 * 60 * 1000 },
             { scope: 'all' }
