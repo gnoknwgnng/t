@@ -74,75 +74,74 @@ class TelegramService {
         }
     }
 
-    async pickTop3Articles(categoryOrCategories) {
-        let targetCategory = null;
-        let categories = DEFAULT_CATEGORIES;
+    // Up to three recent stories, newest first, skipping anything in
+    // options.excludeUrls. One category (or custom topic) gives its three
+    // freshest stories; several categories give the freshest story of each.
+    // Returns fewer than three (or none) when the news cannot be loaded:
+    // there are no made-up placeholder headlines.
+    async pickTop3Articles(categoryOrCategories, options = {}) {
+        const excludeUrls = options.excludeUrls || new Set();
+        const requested = (Array.isArray(categoryOrCategories) ? categoryOrCategories : [categoryOrCategories])
+            .map((category) => newsService.normalizeCategory(category))
+            .filter(Boolean);
+        const categories = requested.length ? [...new Set(requested)] : DEFAULT_CATEGORIES;
 
-        if (typeof categoryOrCategories === 'string' && categoryOrCategories.trim()) {
-            targetCategory = categoryOrCategories.trim().toLowerCase();
-        } else if (Array.isArray(categoryOrCategories) && categoryOrCategories.length === 1) {
-            targetCategory = String(categoryOrCategories[0]).trim().toLowerCase();
-        } else if (Array.isArray(categoryOrCategories) && categoryOrCategories.length > 1) {
-            categories = categoryOrCategories;
+        if (categories.length === 1) {
+            return newsService.getFreshArticles(categories[0], { excludeUrls, limit: 3 });
         }
 
         const results = [];
-
-        if (targetCategory) {
-            const articles = await newsService.getArticlesForCategory(targetCategory);
-            for (let i = 0; i < Math.min(3, articles.length); i++) {
-                results.push(articles[i]);
-            }
-            while (results.length < 3) {
-                const index = results.length;
-                results.push({
-                    category: targetCategory,
-                    title: `${targetCategory.toUpperCase()} Headline Option ${index + 1}`,
-                    summary: `Latest developments in ${targetCategory}.`,
-                    link: `https://techcrunch.com/category/${targetCategory}/`
-                });
-            }
-        } else {
-            const cats = categories.slice(0, 3);
-            for (const category of cats) {
-                const articles = await newsService.getArticlesForCategory(category);
-                results.push(articles[0] || {
-                    category,
-                    title: `${category[0].toUpperCase()}${category.slice(1)} update`,
-                    summary: `Recent ${category} developments`,
-                    link: `https://techcrunch.com/category/${category}/`
-                });
-            }
-            while (results.length < 3) {
-                const fallbackCategory = DEFAULT_CATEGORIES[results.length % DEFAULT_CATEGORIES.length];
-                const articles = await newsService.getArticlesForCategory(fallbackCategory);
-                results.push(articles[0] || { category: fallbackCategory, title: 'News update', summary: '', link: `https://techcrunch.com/category/${fallbackCategory}/` });
+        const taken = new Set(excludeUrls);
+        // Round-robin across the categories until there are three stories.
+        for (let round = 0; round < 3 && results.length < 3; round += 1) {
+            for (const category of categories) {
+                if (results.length >= 3) break;
+                const [article] = await newsService.getFreshArticles(category, { excludeUrls: taken, limit: 1 });
+                if (article) {
+                    taken.add(article.link);
+                    results.push(article);
+                }
             }
         }
+        return results;
+    }
 
-        return results.slice(0, 3);
+    describeAge(article) {
+        const hours = newsService.ageInHours(article);
+        if (!Number.isFinite(hours)) return '';
+        if (hours < 1) return 'just now';
+        if (hours < 24) return `${Math.round(hours)}h ago`;
+        return `${Math.round(hours / 24)}d ago`;
     }
 
     // ------------------------------------------------------------------
     // Real flow: a scheduled queue item is due, and its owner has a linked
-    // Telegram chat. Send them 3 real candidate posts as tappable buttons
-    // tied to THIS queue item's id — not a plain "reply 1/2/3", which
-    // would be ambiguous if the same person has more than one item
+    // Telegram chat. Send them up to 3 real candidate stories as tappable
+    // buttons tied to THIS queue item's id — not a plain "reply 1/2/3",
+    // which would be ambiguous if the same person has more than one item
     // awaiting confirmation at once.
+    //
+    // Returns { options, delivered }. `options` is empty when no recent
+    // news could be loaded; `delivered` is false when Telegram refused the
+    // message. The caller must not wait for a reply in either case.
     // ------------------------------------------------------------------
-    async sendQueueConfirmation(queueItem, schedule, chatId) {
-        const targetCategory = queueItem.metadata?.category ||
-            (Array.isArray(schedule.categories) && schedule.categories.length === 1 ? schedule.categories[0] : schedule.categories);
-        const options = await this.pickTop3Articles(targetCategory);
+    async sendQueueConfirmation(queueItem, schedule, chatId, options = {}) {
+        const targetCategory = queueItem.metadata?.category || schedule.categories;
+        const articles = await this.pickTop3Articles(targetCategory, { excludeUrls: options.excludeUrls });
+        if (!articles.length) {
+            return { options: [], delivered: false };
+        }
 
         const lines = [
             'PostCraft AI \u2014 choose today\'s LinkedIn post',
             `Company: ${schedule.companyName || 'Your company'}`,
             ''
         ];
-        options.forEach((article, index) => {
+        articles.forEach((article, index) => {
+            const age = this.describeAge(article);
             lines.push(`${index + 1}. [${String(article.category || '').toUpperCase()}] ${article.title}`);
-            if (article.summary) {
+            lines.push([article.source, age].filter(Boolean).join(' \u00b7 '));
+            if (article.summary && article.summary !== article.title) {
                 lines.push(String(article.summary).slice(0, 160));
             }
             lines.push('');
@@ -150,15 +149,15 @@ class TelegramService {
         lines.push('Tap a button below to generate and publish that post.');
 
         const keyboard = {
-            inline_keyboard: [options.map((_, index) => ({
+            inline_keyboard: [articles.map((_, index) => ({
                 text: `Choose ${index + 1}`,
                 callback_data: `qc:${queueItem.id}:${index}`
             }))]
         };
 
-        await this.sendMessage(chatId, lines.join('\n'), { reply_markup: keyboard });
+        const sent = await this.sendMessage(chatId, lines.join('\n'), { reply_markup: keyboard });
 
-        return options;
+        return { options: articles, delivered: Boolean(sent) };
     }
 
     async handleQueueConfirmationCallback({ chatId, callbackQueryId, queueItemId, choiceIndex }) {
@@ -219,6 +218,11 @@ class TelegramService {
                 metadata: {
                     ...(queueItem.metadata || {}),
                     chosenOption: choiceIndex + 1,
+                    // Recorded so this story is never offered again.
+                    articleTitle: selectedArticle.title,
+                    articleLink: selectedArticle.link,
+                    articlePublishedAt: selectedArticle.publishedAt || null,
+                    contentStatus: 'generated',
                     confirmedAt: new Date().toISOString()
                 }
             };
@@ -268,6 +272,9 @@ class TelegramService {
 
         try {
             const options = await this.pickTop3Articles(DEFAULT_CATEGORIES);
+            if (!options.length) {
+                return { success: false, error: 'No recent news could be loaded right now. Please try again in a few minutes.' };
+            }
 
             this.pendingVerifications.set(String(chatId), {
                 date: new Date().toISOString(),
@@ -285,8 +292,11 @@ class TelegramService {
             lines.push('----------------------------------');
             lines.push('Reply with 1, 2, or 3 to generate a post (demo only \u2014 not published).');
 
-            await this.sendMessage(chatId, lines.join('\n'));
-            return { success: true, chatId, options };
+            const sent = await this.sendMessage(chatId, lines.join('\n'));
+            if (!sent) {
+                return { success: false, error: `Telegram could not deliver the message. Open @${this.botUsername}, press Start, then try again.` };
+            }
+            return { success: true, options };
         } catch (error) {
             return { success: false, error: error.message };
         }
@@ -379,8 +389,10 @@ class TelegramService {
                 await this.sendTop3Verification(chatId);
             }
         } else if (text === '1' || text === '2' || text === '3') {
+            // Replies only mean something for the generator's "send top 3"
+            // preview; scheduled posts are confirmed with the buttons.
             const profile = await getProfileByTelegramChatId(chatId);
-            if (!profile) {
+            if (!profile || this.pendingVerifications.has(String(chatId))) {
                 await this.handleDemoOptionSelection(chatId, parseInt(text, 10));
             }
         }

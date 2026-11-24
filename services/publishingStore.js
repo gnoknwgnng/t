@@ -3,7 +3,8 @@ const path = require('path');
 const axios = require('axios');
 const crypto = require('crypto');
 
-const dataDir = path.join(__dirname, '..', 'data');
+// POSTCRAFT_DATA_DIR lets tests keep their records away from real local data.
+const dataDir = process.env.POSTCRAFT_DATA_DIR || path.join(__dirname, '..', 'data');
 const statePath = path.join(dataDir, 'publishing-state.json');
 
 const defaultState = {
@@ -584,6 +585,44 @@ async function updateQueueItem(queueItemId, patch, context = {}) {
     return queueItem;
 }
 
+// Removes queue items by id for the user in `context` (the user filter is
+// applied to the delete itself, so one person can never remove another's).
+async function deleteQueueItems(queueItemIds, context = {}) {
+    const ids = (queueItemIds || []).filter(Boolean);
+    if (!ids.length) {
+        return 0;
+    }
+
+    if (isSupabaseEnabled && !context.localOnly) {
+        await deleteSupabaseRowsById('queue_items', ids, context);
+        return ids.length;
+    }
+
+    const state = await readLocalState(context);
+    const before = state.queue.length;
+    state.queue = state.queue.filter((item) => !ids.includes(item.id));
+    await writeLocalState(state, context);
+    return before - state.queue.length;
+}
+
+// Removes a schedule together with every queue item that belongs to it.
+async function deleteSchedule(scheduleId, context = {}) {
+    if (isSupabaseEnabled && !context.localOnly) {
+        const state = await readSupabaseState(context);
+        const queueIds = state.queue.filter((item) => item.scheduleId === scheduleId).map((item) => item.id);
+        await deleteSupabaseRowsById('queue_items', queueIds, context);
+        await deleteSupabaseRowsById('schedules', [scheduleId], context);
+        return { removedQueueItems: queueIds.length };
+    }
+
+    const state = await readLocalState(context);
+    const before = state.queue.length;
+    state.queue = state.queue.filter((item) => item.scheduleId !== scheduleId);
+    state.schedules = state.schedules.filter((item) => item.id !== scheduleId);
+    await writeLocalState(state, context);
+    return { removedQueueItems: before - state.queue.length };
+}
+
 function createId(prefix) {
     return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -884,6 +923,8 @@ module.exports = {
     saveQueueItem,
     updateQueueItemStatus,
     updateQueueItem,
+    deleteQueueItems,
+    deleteSchedule,
     createId,
     upsertProfile,
     getProfile,

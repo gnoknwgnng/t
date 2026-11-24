@@ -7,6 +7,8 @@ const requiredPaths = [
     path.join(__dirname, '..', 'public', 'generator.html'),
     path.join(__dirname, '..', 'public', 'publisher.html'),
     path.join(__dirname, '..', 'public', 'auth.html'),
+    path.join(__dirname, '..', 'public', 'theme.css'),
+    path.join(__dirname, '..', 'public', 'ui.js'),
     path.join(__dirname, '..', 'services', 'oauthService.js'),
     path.join(__dirname, '..', 'services', 'publishingStore.js')
 ];

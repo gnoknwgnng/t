@@ -1,70 +1,128 @@
 const Parser = require('rss-parser');
 
-const RSS_FEEDS = {
-    tech: 'https://techcrunch.com/feed/',
-    science: 'https://www.sciencedaily.com/rss/all.xml',
-    dental: 'https://www.dentistrytoday.com/feed/'
-};
-
-const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
-
-// Default fallbacks in case network is down and cache is empty
-const FALLBACK_ARTICLES = {
-    tech: [
-        {
-            category: 'tech',
-            title: 'Emerging Breakthroughs in Artificial Intelligence and Cloud Compute',
-            summary: 'Recent developments in scalable AI models and edge computing architecture are redefining how modern enterprise platforms deploy automated workflows.',
-            link: 'https://techcrunch.com/category/artificial-intelligence/',
-            publishedAt: new Date().toISOString(),
-            source: 'TechCrunch'
-        },
-        {
-            category: 'tech',
-            title: 'Cybersecurity Best Practices for Cloud Infrastructure',
-            summary: 'Industry leaders share essential guidelines for securing zero-trust architectures and data pipelines across multi-cloud environments.',
-            link: 'https://techcrunch.com/category/enterprise/',
-            publishedAt: new Date().toISOString(),
-            source: 'TechCrunch'
-        }
-    ],
-    science: [
-        {
-            category: 'science',
-            title: 'New Study Highlights Innovations in Clean Energy and Storage',
-            summary: 'Researchers have unveiled a promising material composition that enhances energy density and grid efficiency for renewable power applications.',
-            link: 'https://www.sciencedaily.com/news/matter_energy/',
-            publishedAt: new Date().toISOString(),
-            source: 'ScienceDaily'
-        },
-        {
-            category: 'science',
-            title: 'Advances in Molecular Biology Open New Healthcare Horizons',
-            summary: 'Cutting-edge discoveries in genome sequencing and biomarker diagnostics offer potential solutions for early disease detection.',
-            link: 'https://www.sciencedaily.com/news/health_medicine/',
-            publishedAt: new Date().toISOString(),
-            source: 'ScienceDaily'
-        }
-    ],
+// ---------------------------------------------------------------------------
+// Where the news comes from.
+//
+// Each built-in category has one or more publisher feeds. Google News search
+// is used as a top-up when those feeds are thin or down, and as the only
+// source for custom topics (any text the user types, e.g. "electric
+// vehicles"). Every story carries its real publish date, and callers only
+// ever get recent stories: there are no canned "fallback" articles, so a post
+// can never be written about news that did not happen.
+// ---------------------------------------------------------------------------
+const CATEGORY_FEEDS = {
+    tech: ['https://techcrunch.com/feed/'],
+    science: ['https://www.sciencedaily.com/rss/all.xml'],
     dental: [
-        {
-            category: 'dental',
-            title: 'Modern Digital Dentistry: Transforming Patient Care with 3D Imaging',
-            summary: 'Intraoral scanners and 3D printing technologies are revolutionizing restorative procedures, shortening appointment times, and raising standard of care.',
-            link: 'https://www.dentistrytoday.com/category/clinical/',
-            publishedAt: new Date().toISOString(),
-            source: 'Dentistry Today'
-        },
-        {
-            category: 'dental',
-            title: 'Preventive Dental Care Strategies and Patient Wellness Innovations',
-            summary: 'Clinical studies demonstrate the effective link between proactive oral hygiene routines and overall systemic health outcomes.',
-            link: 'https://www.dentistrytoday.com/category/hygiene/',
-            publishedAt: new Date().toISOString(),
-            source: 'Dentistry Today'
-        }
+        'https://www.dentistrytoday.com/feed/',
+        'https://www.sciencedaily.com/rss/health_medicine/dentistry.xml'
     ]
 };
+
+// Search phrase used for the Google News top-up of each built-in category.
+const CATEGORY_SEARCH = {
+    tech: 'technology',
+    science: 'science research',
+    dental: 'dentistry OR dental'
+};
+
+const CACHE_TTL_MS = 30 * 60 * 1000;      // refetch a feed at most every 30 minutes
+const FRESH_HOURS = 48;                   // what counts as "today's news"
+const RECENT_HOURS = 7 * 24;              // widest window we will ever post from
+const MIN_FRESH_BEFORE_TOP_UP = 5;        // below this, also ask Google News
+const MAX_TOPIC_LENGTH = 40;
+
+function stripHtml(htmlString) {
+    if (!htmlString) return '';
+    return String(htmlString)
+        .replace(/<[^>]*>?/gm, '')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+// Lower-cases and cleans a category or custom topic so the same text always
+// maps to the same cache entry and is safe to put in a search URL.
+function normalizeCategory(category) {
+    return String(category || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9 &+.\-]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, MAX_TOPIC_LENGTH);
+}
+
+function isBuiltInCategory(category) {
+    return Object.prototype.hasOwnProperty.call(CATEGORY_FEEDS, category);
+}
+
+function googleNewsUrl(query) {
+    // "when:7d" keeps Google's results to the last week.
+    const q = encodeURIComponent(`${query} when:7d`);
+    return `https://news.google.com/rss/search?q=${q}&hl=en-US&gl=US&ceid=US:en`;
+}
+
+function parseDate(value) {
+    if (!value) return null;
+    const time = new Date(value).getTime();
+    return Number.isNaN(time) ? null : time;
+}
+
+function ageInHours(article, now = Date.now()) {
+    const time = parseDate(article.publishedAt);
+    return time === null ? Infinity : (now - time) / 3600000;
+}
+
+function articleKey(article) {
+    return String(article.link || article.title || '').trim().toLowerCase();
+}
+
+function titleKey(article) {
+    return String(article.title || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+// Pure helper (also used by the tests): from a pool of articles, return the
+// ones worth posting about, newest first.
+//   - never anything already used (by link or by headline)
+//   - prefer the last 48 hours; widen to 7 days only when that leaves too few
+//   - undated stories are only used when nothing dated is available
+function selectFreshArticles(articles, options = {}) {
+    const now = options.now || Date.now();
+    const limit = options.limit || 10;
+    const excluded = new Set([...(options.excludeUrls || [])].map((value) => String(value).trim().toLowerCase()));
+    const excludedTitles = new Set([...(options.excludeTitles || [])].map((value) => titleKey({ title: value })));
+
+    const seen = new Set();
+    const candidates = (articles || []).filter((article) => {
+        const key = articleKey(article);
+        const tKey = titleKey(article);
+        if (!key || excluded.has(key) || excludedTitles.has(tKey)) return false;
+        if (seen.has(key) || seen.has(tKey)) return false;
+        seen.add(key);
+        seen.add(tKey);
+        return true;
+    });
+
+    const byNewest = (a, b) => ageInHours(a, now) - ageInHours(b, now);
+    const fresh = candidates.filter((article) => ageInHours(article, now) <= FRESH_HOURS).sort(byNewest);
+    if (fresh.length >= limit) {
+        return fresh.slice(0, limit);
+    }
+
+    const recent = candidates.filter((article) => ageInHours(article, now) <= RECENT_HOURS).sort(byNewest);
+    if (recent.length) {
+        return recent.slice(0, limit);
+    }
+
+    // Nothing dated within a week: fall back to undated items only (feeds
+    // that publish no dates), never to stories known to be old.
+    return candidates.filter((article) => parseDate(article.publishedAt) === null).slice(0, limit);
+}
 
 class NewsService {
     constructor() {
@@ -76,149 +134,154 @@ class NewsService {
             timeout: 12000
         });
 
-        this.cache = {
-            tech: { items: [], lastUpdated: 0 },
-            science: { items: [], lastUpdated: 0 },
-            dental: { items: [], lastUpdated: 0 }
-        };
+        this.cache = new Map(); // category => { items, lastUpdated }
     }
 
     stripHtml(htmlString) {
-        if (!htmlString) return '';
-        return String(htmlString)
-            .replace(/<[^>]*>?/gm, '')
-            .replace(/&nbsp;/g, ' ')
-            .replace(/&amp;/g, '&')
-            .replace(/&lt;/g, '<')
-            .replace(/&gt;/g, '>')
-            .replace(/&quot;/g, '"')
-            .replace(/&#39;/g, "'")
-            .replace(/\s+/g, ' ')
-            .trim();
+        return stripHtml(htmlString);
     }
 
-    async fetchCategoryFeed(category) {
-        const feedUrl = RSS_FEEDS[category];
-        if (!feedUrl) {
-            console.error(`[NewsService] Unknown category: ${category}`);
-            return this.cache[category]?.items || FALLBACK_ARTICLES[category] || [];
-        }
+    async fetchFeed(feedUrl, category, { fromGoogle = false } = {}) {
+        const feed = await this.parser.parseURL(feedUrl);
+        const feedTitle = feed.title ? stripHtml(feed.title) : '';
 
-        try {
-            console.log(`📡 [NewsService] Fetching RSS feed for '${category}' from ${feedUrl}...`);
-            const feed = await this.parser.parseURL(feedUrl);
-            const sourceName = feed.title ? this.stripHtml(feed.title) : category.toUpperCase();
+        return (feed.items || []).map((item) => {
+            let title = stripHtml(item.title);
+            let source = feedTitle || category;
 
-            const items = (feed.items || []).map((item) => {
-                const title = this.stripHtml(item.title) || 'Untitled News';
-                const rawSummary = item.contentSnippet || item.summary || item.content || item.description || '';
-                let summary = this.stripHtml(rawSummary);
-                if (summary.length > 350) {
-                    summary = summary.substring(0, 350) + '...';
+            // Google News titles look like "Headline - Publisher".
+            if (fromGoogle) {
+                const split = title.lastIndexOf(' - ');
+                if (split > 20) {
+                    source = title.slice(split + 3).trim();
+                    title = title.slice(0, split).trim();
                 }
-                let rawLink = item.link || item.guid || (typeof item.id === 'string' ? item.id : '');
-                if (typeof rawLink === 'object' && rawLink.href) {
-                    rawLink = rawLink.href;
-                }
-                const link = String(rawLink || '').trim();
-                const publishedAt = item.pubDate || item.isoDate || new Date().toISOString();
-
-                return {
-                    category,
-                    title,
-                    summary: summary || title,
-                    link,
-                    publishedAt,
-                    source: sourceName
-                };
-            }).filter((item) => {
-                if (!item.title || !item.link || !item.link.startsWith('http')) return false;
-                const url = item.link.toLowerCase();
-                // Reject generic homepage and feed URLs
-                if (
-                    url.endsWith('/feed') ||
-                    url.endsWith('/feed/') ||
-                    url.endsWith('/rss') ||
-                    url.endsWith('/rss/') ||
-                    url === 'https://techcrunch.com' ||
-                    url === 'https://techcrunch.com/' ||
-                    url === 'https://www.sciencedaily.com' ||
-                    url === 'https://www.sciencedaily.com/' ||
-                    url === 'https://www.dentistrytoday.com' ||
-                    url === 'https://www.dentistrytoday.com/'
-                ) {
-                    return false;
-                }
-                return true;
-            });
-
-            items.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
-
-            if (items.length > 0) {
-                this.cache[category] = {
-                    items,
-                    lastUpdated: Date.now()
-                };
-                console.log(`✅ [NewsService] Cached ${items.length} items for category '${category}'`);
-            } else if (this.cache[category].items.length === 0) {
-                this.cache[category].items = FALLBACK_ARTICLES[category] || [];
             }
-        } catch (error) {
-            console.error(`⚠️ [NewsService] Error fetching feed for '${category}': ${error.message}`);
-            if (!this.cache[category] || !this.cache[category].items || this.cache[category].items.length === 0) {
-                console.log(`ℹ️ [NewsService] Using fallback static articles for '${category}'`);
-                this.cache[category] = {
-                    items: FALLBACK_ARTICLES[category] || [],
-                    lastUpdated: Date.now()
-                };
+
+            let summary = stripHtml(item.contentSnippet || item.summary || item.content || item.description || '');
+            if (fromGoogle || !summary) {
+                // Google's snippet is just the headline again.
+                summary = title;
+            }
+            if (summary.length > 350) {
+                summary = summary.substring(0, 350) + '...';
+            }
+
+            let rawLink = item.link || item.guid || (typeof item.id === 'string' ? item.id : '');
+            if (rawLink && typeof rawLink === 'object' && rawLink.href) {
+                rawLink = rawLink.href;
+            }
+
+            const publishedTime = parseDate(item.isoDate || item.pubDate);
+
+            return {
+                category,
+                title,
+                summary,
+                link: String(rawLink || '').trim(),
+                // null (not "now") when the feed gives no date, so an old
+                // undated story can never pass as fresh.
+                publishedAt: publishedTime === null ? null : new Date(publishedTime).toISOString(),
+                source
+            };
+        }).filter((item) => {
+            if (!item.title || !item.link.startsWith('http')) return false;
+            try {
+                // Reject links that are just a site's home page or feed.
+                const url = new URL(item.link);
+                const path = url.pathname.replace(/\/+$/, '');
+                return path !== '' && !/\/(feed|rss)$/i.test(path);
+            } catch (error) {
+                return false;
+            }
+        });
+    }
+
+    async loadCategory(category) {
+        const feeds = CATEGORY_FEEDS[category] || [];
+        const now = Date.now();
+        let items = [];
+
+        const results = await Promise.allSettled(feeds.map((url) => this.fetchFeed(url, category)));
+        results.forEach((result, index) => {
+            if (result.status === 'fulfilled') {
+                items = items.concat(result.value);
             } else {
-                console.log(`ℹ️ [NewsService] Retaining last cached ${this.cache[category].items.length} items for '${category}'`);
+                console.error(`[NewsService] Feed failed for '${category}' (${feeds[index]}): ${result.reason?.message}`);
+            }
+        });
+
+        const freshCount = items.filter((article) => ageInHours(article, now) <= FRESH_HOURS).length;
+        if (freshCount < MIN_FRESH_BEFORE_TOP_UP) {
+            const query = CATEGORY_SEARCH[category] || category;
+            try {
+                const extra = await this.fetchFeed(googleNewsUrl(query), category, { fromGoogle: true });
+                items = items.concat(extra);
+            } catch (error) {
+                console.error(`[NewsService] Google News top-up failed for '${category}': ${error.message}`);
             }
         }
 
-        return this.cache[category].items;
+        items.sort((a, b) => ageInHours(a, now) - ageInHours(b, now));
+        return items;
+    }
+
+    // Every story currently known for a category, newest first.
+    async getArticlesForCategory(category) {
+        const key = normalizeCategory(category) || 'tech';
+        const cached = this.cache.get(key);
+        if (cached && cached.items.length && Date.now() - cached.lastUpdated < CACHE_TTL_MS) {
+            return cached.items;
+        }
+
+        const items = await this.loadCategory(key);
+        if (items.length) {
+            this.cache.set(key, { items, lastUpdated: Date.now() });
+            return items;
+        }
+
+        // Every source failed: reuse the last good fetch if there is one.
+        return cached ? cached.items : [];
+    }
+
+    // Recent, not-yet-used stories for a category, newest first.
+    async getFreshArticles(category, options = {}) {
+        const articles = await this.getArticlesForCategory(category);
+        return selectFreshArticles(articles, options);
+    }
+
+    // One story for a category that has not been used yet. `usedUrls` is
+    // updated so repeated calls walk through different stories. Returns null
+    // when no recent news could be loaded at all.
+    async getArticleForCategory(category, usedUrls = new Set()) {
+        let [article] = await this.getFreshArticles(category, { excludeUrls: usedUrls, limit: 1 });
+
+        if (!article) {
+            // Everything recent is used up: allow a repeat rather than
+            // reaching for older news.
+            [article] = await this.getFreshArticles(category, { limit: 1 });
+        }
+
+        if (!article) {
+            return null;
+        }
+
+        usedUrls.add(articleKey(article));
+        return article;
     }
 
     async refreshAllFeeds() {
-        const categories = Object.keys(RSS_FEEDS);
-        for (const cat of categories) {
-            await this.fetchCategoryFeed(cat);
+        this.cache.clear();
+        for (const category of Object.keys(CATEGORY_FEEDS)) {
+            await this.getArticlesForCategory(category);
         }
-    }
-
-    async getArticlesForCategory(category) {
-        const cat = String(category || 'tech').toLowerCase();
-        const validCat = RSS_FEEDS[cat] ? cat : 'tech';
-        const cacheEntry = this.cache[validCat];
-
-        const isStale = !cacheEntry || (Date.now() - cacheEntry.lastUpdated > CACHE_TTL_MS);
-        const isEmpty = !cacheEntry || !cacheEntry.items || cacheEntry.items.length === 0;
-
-        if (isStale || isEmpty) {
-            await this.fetchCategoryFeed(validCat);
-        }
-
-        return this.cache[validCat]?.items?.length > 0
-            ? this.cache[validCat].items
-            : (FALLBACK_ARTICLES[validCat] || []);
-    }
-
-    async getArticleForCategory(category, usedUrls = new Set()) {
-        const articles = await this.getArticlesForCategory(category);
-        if (!articles || articles.length === 0) {
-            return (FALLBACK_ARTICLES[category] || FALLBACK_ARTICLES.tech)[0];
-        }
-
-        let unused = articles.find((art) => !usedUrls.has(art.link || art.title));
-
-        if (!unused) {
-            console.log(`🔄 [NewsService] RSS pool exhausted for '${category}', cycling back to first article.`);
-            unused = articles[0];
-        }
-
-        usedUrls.add(unused.link || unused.title);
-        return unused;
     }
 }
 
-module.exports = new NewsService();
+const service = new NewsService();
+service.selectFreshArticles = selectFreshArticles;
+service.normalizeCategory = normalizeCategory;
+service.isBuiltInCategory = isBuiltInCategory;
+service.ageInHours = ageInHours;
+
+module.exports = service;

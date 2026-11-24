@@ -47,6 +47,16 @@ async function createGeneratorForSchedule(schedule) {
 
 const newsService = require('./newsService');
 
+// True while a queue item has no post text of its own yet and is waiting for
+// its owner to pick one of the day's stories on Telegram.
+function needsTelegramChoice(queueItem) {
+    return (
+        !queueItem.content ||
+        queueItem.metadata?.contentStatus === 'pending_verification' ||
+        String(queueItem.content).includes('Scheduled news post')
+    );
+}
+
 function needsQueueContent(queueItem) {
     return (
         !queueItem.content ||
@@ -57,24 +67,21 @@ function needsQueueContent(queueItem) {
 
 async function generateQueueContent(generator, schedule, scheduledFor, category = 'tech') {
     try {
-        const cat = String(category || queueItem?.metadata?.category || 'tech').toLowerCase();
+        const cat = newsService.normalizeCategory(category) || 'tech';
         const article = await newsService.getArticleForCategory(cat);
-        const prompt = `You are a professional LinkedIn content expert. Create an engaging, professional LinkedIn post based on this news:
+        if (!article) {
+            throw new Error(`No recent news for ${cat}`);
+        }
 
-Title: ${article.title}
-Summary: ${article.summary}
-Source Link: ${article.link}
-
-Format with line breaks, 2-3 relevant hashtags, and a call-to-action at the end.`;
-
-        const content = await generator.generateContentWithAI(prompt);
+        const content = await generator.generateNewsPost(new Date(scheduledFor), cat, article);
         return {
-            content: content || `${article.title}\n\n${article.summary}\n\nRead more: ${article.link}`,
+            content,
             metadata: {
                 category: cat,
                 articleTitle: article.title,
                 articleLink: article.link,
-                contentStatus: content ? 'generated' : 'news_fallback',
+                articlePublishedAt: article.publishedAt || null,
+                contentStatus: 'generated',
                 generatedAt: new Date().toISOString()
             }
         };
@@ -113,37 +120,117 @@ function formatPublishError(error) {
     };
 }
 
-function buildScheduleSlots(postsPerWeek, startDate, endDate, preferredHour) {
-    const slots = [];
-    const scheduleStart = startOfDay(startDate);
-    const scheduleEnd = endOfDay(endDate);
-    let weekStart = new Date(scheduleStart);
+// ---------------------------------------------------------------------------
+// Time zones.
+//
+// "10:00" on the schedule form means 10:00 on the clock of the person who
+// filled it in, not on the server (which runs in UTC on Vercel). The browser
+// sends its IANA zone name (e.g. "Asia/Kolkata") and every slot is built as
+// that wall-clock time in that zone, then stored as an absolute instant.
+// ---------------------------------------------------------------------------
+const SERVER_TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 
-    while (weekStart <= scheduleEnd) {
-        for (let i = 0; i < postsPerWeek; i++) {
-            const dayOffset = i % 7;
-            const slotOffset = Math.floor(i / 7);
-            const scheduled = new Date(weekStart);
-            scheduled.setDate(scheduled.getDate() + dayOffset);
-            scheduled.setHours(preferredHour + (slotOffset * 4), 0, 0, 0);
-
-            if (scheduled >= scheduleStart && scheduled <= scheduleEnd) {
-                slots.push(scheduled);
-            }
+function resolveTimeZone(timeZone) {
+    const candidate = String(timeZone || '').trim();
+    if (candidate) {
+        try {
+            new Intl.DateTimeFormat('en-US', { timeZone: candidate });
+            return candidate;
+        } catch (error) {
+            // Unknown zone name: fall through to the server's zone.
         }
+    }
+    return SERVER_TIME_ZONE;
+}
 
-        weekStart = addDays(weekStart, 7);
+// The calendar date and time shown on a clock in `timeZone` at `instant`.
+function wallClockParts(instant, timeZone) {
+    const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone,
+        hourCycle: 'h23',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    }).formatToParts(new Date(instant));
+    const get = (type) => Number(parts.find((part) => part.type === type).value);
+    return { year: get('year'), month: get('month'), day: get('day'), hour: get('hour'), minute: get('minute'), second: get('second') };
+}
+
+// The instant at which a clock in `timeZone` shows the given date and time.
+function zonedTimeToUtc(year, month, day, hour, timeZone, minute = 0, second = 0) {
+    const asIfUtc = Date.UTC(year, month - 1, day, hour, minute, second);
+    const offsetAt = (instant) => {
+        const wall = wallClockParts(instant, timeZone);
+        return Date.UTC(wall.year, wall.month - 1, wall.day, wall.hour, wall.minute, wall.second) - instant;
+    };
+    // Two passes so the result is right on either side of a DST change.
+    const firstGuess = asIfUtc - offsetAt(asIfUtc);
+    return new Date(asIfUtc - offsetAt(firstGuess));
+}
+
+// Accepts "YYYY-MM-DD" (taken as a calendar date in the user's zone) or a
+// Date/ISO timestamp (converted to the calendar date in that zone).
+function toCalendarDate(value, timeZone) {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || '').trim());
+    if (match) {
+        return { year: Number(match[1]), month: Number(match[2]), day: Number(match[3]) };
+    }
+    const date = value ? new Date(value) : new Date();
+    const wall = wallClockParts(Number.isNaN(date.getTime()) ? Date.now() : date.getTime(), timeZone);
+    return { year: wall.year, month: wall.month, day: wall.day };
+}
+
+function addCalendarDays(calendarDate, days) {
+    const shifted = new Date(Date.UTC(calendarDate.year, calendarDate.month - 1, calendarDate.day + days));
+    return { year: shifted.getUTCFullYear(), month: shifted.getUTCMonth() + 1, day: shifted.getUTCDate() };
+}
+
+function compareCalendarDates(a, b) {
+    return Date.UTC(a.year, a.month - 1, a.day) - Date.UTC(b.year, b.month - 1, b.day);
+}
+
+// One slot per day at the preferred hour; the 8th-10th posts of a week go
+// out four hours later on the first days of that week.
+//   options.timeZone  - IANA zone the dates and hour are expressed in
+//   options.notBefore - drop slots at or before this instant (used when a
+//                       schedule is created, so today's already-passed hour
+//                       does not publish the moment the schedule is saved)
+function buildScheduleSlots(postsPerWeek, startDate, endDate, preferredHour, options = {}) {
+    const timeZone = resolveTimeZone(options.timeZone);
+    const notBefore = options.notBefore ? new Date(options.notBefore).getTime() : null;
+    const first = toCalendarDate(startDate, timeZone);
+    const last = toCalendarDate(endDate, timeZone);
+    const slots = [];
+
+    for (let weekStart = first; compareCalendarDates(weekStart, last) <= 0; weekStart = addCalendarDays(weekStart, 7)) {
+        for (let i = 0; i < postsPerWeek; i++) {
+            const day = addCalendarDays(weekStart, i % 7);
+            if (compareCalendarDates(day, last) > 0) {
+                continue;
+            }
+
+            const hour = preferredHour + (Math.floor(i / 7) * 4);
+            const scheduled = zonedTimeToUtc(day.year, day.month, day.day, hour, timeZone);
+            if (notBefore !== null && scheduled.getTime() <= notBefore) {
+                continue;
+            }
+            slots.push(scheduled);
+        }
     }
 
     return slots.sort((a, b) => a.getTime() - b.getTime());
 }
 
-async function generateQueueItemsForSchedule(schedule) {
+async function generateQueueItemsForSchedule(schedule, options = {}) {
     const slots = buildScheduleSlots(
         schedule.postsPerWeek,
         schedule.startDate,
         schedule.endDate,
-        schedule.preferredHour || 10
+        schedule.preferredHour || 10,
+        { timeZone: schedule.timeZone, notBefore: options.notBefore }
     );
     if (!slots.length) {
         return [];
@@ -266,12 +353,22 @@ async function createScheduleAndQueue(payload, context = {}) {
         throw new Error('Selected account does not match the chosen publishing platform.');
     }
 
-    const normalizedStartDate = startOfDay(payload.startDate || new Date());
-    const normalizedEndDate = endOfDay(payload.endDate || addDays(normalizedStartDate, 27));
+    // Dates and the preferred hour are in the user's own time zone.
+    const timeZone = resolveTimeZone(payload.timeZone);
+    const firstDay = toCalendarDate(payload.startDate || new Date(), timeZone);
+    const lastDay = payload.endDate ? toCalendarDate(payload.endDate, timeZone) : addCalendarDays(firstDay, 27);
 
-    if (normalizedEndDate < normalizedStartDate) {
+    if (compareCalendarDates(lastDay, firstDay) < 0) {
         throw new Error('End date must be on or after the start date.');
     }
+
+    const normalizedStartDate = zonedTimeToUtc(firstDay.year, firstDay.month, firstDay.day, 0, timeZone);
+    const normalizedEndDate = zonedTimeToUtc(lastDay.year, lastDay.month, lastDay.day, 23, timeZone, 59, 59);
+
+    const categories = (Array.isArray(payload.categories) ? payload.categories : [])
+        .map((category) => newsService.normalizeCategory(category))
+        .filter(Boolean)
+        .slice(0, 14);
 
     const schedule = {
         id: createId('schedule'),
@@ -283,8 +380,8 @@ async function createScheduleAndQueue(payload, context = {}) {
         industry: payload.industry || 'General',
         services: payload.services || [],
         countryCode: payload.countryCode || 'IN',
-        mode: payload.mode || 'rotation',
-        categories: Array.isArray(payload.categories) && payload.categories.length > 0 ? payload.categories : ['tech', 'science', 'dental'],
+        mode: payload.mode === 'block' ? 'block' : 'rotation',
+        categories: categories.length > 0 ? categories : ['tech', 'science', 'dental'],
         postsPerWeek: payload.postsPerWeek,
         preferredHour: payload.preferredHour || 10,
         startDate: normalizedStartDate.toISOString(),
@@ -293,11 +390,19 @@ async function createScheduleAndQueue(payload, context = {}) {
         createdAt: new Date().toISOString()
     };
 
+    // Slots are built from the calendar dates in the user's zone, and any
+    // slot that has already passed today is skipped instead of firing the
+    // moment the schedule is saved.
     const queueItems = await generateQueueItemsForSchedule({
         ...schedule,
-        startDate: new Date(schedule.startDate),
-        endDate: new Date(schedule.endDate)
-    });
+        timeZone,
+        startDate: `${firstDay.year}-${String(firstDay.month).padStart(2, '0')}-${String(firstDay.day).padStart(2, '0')}`,
+        endDate: `${lastDay.year}-${String(lastDay.month).padStart(2, '0')}-${String(lastDay.day).padStart(2, '0')}`
+    }, { notBefore: new Date() });
+
+    if (!queueItems.length) {
+        throw new Error('That date range has no upcoming posting times. Pick a later end date.');
+    }
 
     await saveSchedule(schedule, context);
     await saveQueueItems(queueItems, context);
@@ -348,7 +453,7 @@ async function publishQueueItem(queueItemId, context = {}) {
     }, effectiveContext);
 
     try {
-        if (!queueItem.content || queueItem.metadata?.contentStatus === 'pending_verification' || queueItem.content.includes('Scheduled news post')) {
+        if (needsTelegramChoice(queueItem)) {
             const profile = await getProfile(queueItem.userId);
 
             if (!profile?.telegramChatId) {
@@ -364,7 +469,36 @@ async function publishQueueItem(queueItemId, context = {}) {
 
             console.log(`📡 [Scheduler] Sending Telegram confirmation to user ${queueItem.userId} for queue item ${queueItem.id}...`);
 
-            const options = await telegramService.sendQueueConfirmation(queueItem, schedule, profile.telegramChatId);
+            // Stories this person has already been offered or has posted, so
+            // today's options are always new ones.
+            const usedLinks = new Set();
+            state.queue
+                .filter((item) => item.userId === queueItem.userId && item.id !== queueItem.id)
+                .forEach((item) => {
+                    if (item.metadata?.articleLink) usedLinks.add(item.metadata.articleLink);
+                    (item.metadata?.telegramOptions || []).forEach((option) => {
+                        if (option?.link) usedLinks.add(option.link);
+                    });
+                });
+
+            const { options, delivered } = await telegramService.sendQueueConfirmation(
+                queueItem,
+                schedule,
+                profile.telegramChatId,
+                { excludeUrls: usedLinks }
+            );
+
+            if (!options.length || !delivered) {
+                // Nothing was sent, so there is nothing to wait for: fail
+                // clearly instead of sitting in "awaiting Telegram" forever.
+                queueItem.status = 'failed';
+                queueItem.error = !options.length
+                    ? `No recent news could be loaded for "${queueItem.metadata?.category || 'this topic'}". Use Publish Now to try again, or write the post yourself with Edit.`
+                    : 'The Telegram message could not be delivered. Open the bot chat, press Start, then use Publish Now to try again.';
+                queueItem.updatedAt = new Date().toISOString();
+                await saveQueueItem(queueItem, effectiveContext);
+                return queueItem;
+            }
 
             // pending_confirmation is intentionally its own status, distinct
             // from 'scheduled' — publishDueQueueItems only looks for items
@@ -408,11 +542,25 @@ async function publishDueQueueItems(options = {}, context = {}) {
     const effectiveContext = resolveSchedulerContext(context);
     const state = await readState(effectiveContext);
 
+    // Where the automatic check only runs once a day (Vercel Hobby cron),
+    // posts that still need a Telegram choice are sent for approval up to
+    // `confirmationLookaheadMs` early, so the day's options arrive in the
+    // morning and each post goes out when its option is tapped. Posts whose
+    // text is already written are never published early.
+    const lookaheadMs = Math.max(0, Number(options.confirmationLookaheadMs || 0));
+    const isDue = (item) => {
+        const scheduledTime = new Date(item.scheduledFor).getTime();
+        if (scheduledTime <= now.getTime()) {
+            return true;
+        }
+        return lookaheadMs > 0 && needsTelegramChoice(item) && scheduledTime <= now.getTime() + lookaheadMs;
+    };
+
     const dueItems = state.queue
         .filter((item) =>
             item.platform === 'linkedin' &&
             item.status === 'scheduled' &&
-            new Date(item.scheduledFor).getTime() <= now.getTime()
+            isDue(item)
         )
         .sort((a, b) => new Date(a.scheduledFor).getTime() - new Date(b.scheduledFor).getTime())
         .slice(0, limit);
@@ -474,5 +622,8 @@ module.exports = {
     hydratePendingQueueItems,
     publishQueueItem,
     publishDueQueueItems,
-    startScheduler
+    startScheduler,
+    buildScheduleSlots,
+    zonedTimeToUtc,
+    needsTelegramChoice
 };

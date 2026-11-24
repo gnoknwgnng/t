@@ -172,10 +172,12 @@ class LinkedInPostGenerator {
         return str
             // Remove markdown bold (**text** or __text__)
             .replace(/\*\*(.*?)\*\*/g, '$1')
-            .replace(/__(.*?)__/g, '$1')
-            // Remove markdown italic (*text* or _text_)
+            .replace(/(^|[\s(])__([^_\n]+)__(?=$|[\s).,!?:;])/gm, '$1$2')
+            // Remove markdown italic (*text* or _text_). Underscores only
+            // count as markdown when they wrap a whole word or phrase, so
+            // links such as https://site.com/a_b_c keep their underscores.
             .replace(/\*(.*?)\*/g, '$1')
-            .replace(/_([^_]+)_/g, '$1')
+            .replace(/(^|[\s(])_([^_\n]+)_(?=$|[\s).,!?:;])/gm, '$1$2')
             // Remove backticks
             .replace(/`([^`]+)`/g, '$1')
             // Strip emojis
@@ -254,43 +256,104 @@ Requirements:
         const skipAi = Boolean(options.skipAi);
 
         if (!skipAi) {
-            const aiPrompt = `You are an elite LinkedIn content creator and industry analyst writing a high-performing, viral professional post based on this breaking news.
-
-Category: ${category.toUpperCase()}
-Article Headline: ${article.title}
-Article Summary: ${article.summary}
-Article Source: ${article.source}
-Article Link: ${article.link}
-
-STRICT FORMATTING CONSTRAINTS:
-1. NO MARKDOWN SYMBOLS: Do NOT use any markdown formatting such as **bold**, *italics*, __underline__, or backticks. Write purely in clean plain text so it looks authentic and human-written on LinkedIn.
-2. ABSOLUTELY NO EMOJIS OR ICONS ANYWHERE IN THE POST. Zero emojis.
-3. High-Impact Hook: Start with a powerful, clean headline/hook without any asterisks.
-4. Core Insights: Share 2-3 key takeaways or strategic insights summarizing the developments cleanly.
-5. Mandatory Article Link: Include a clear call to read the full story with the exact article link: ${article.link} (e.g. "Read the full story: ${article.link}")
-6. Strategic Hashtags: Include 5 to 8 strategic, highly relevant hashtags at the bottom (e.g. #${category.toUpperCase()} #Innovation #IndustryNews #BusinessGrowth #TechTrends).
-7. Tone: Authoritative, polished, compelling, professional, and clean.
-8. Length: Maximum ${platformConfig.maxWords} words.`;
-
-            const aiContent = await this.generateContentWithAI(aiPrompt);
+            const aiContent = await this.generateContentWithAI(this.buildNewsPostPrompt(category, article));
             if (aiContent) {
-                return this.cleanLinkedInText(aiContent);
+                return this.ensureArticleLink(this.cleanLinkedInText(aiContent), article);
             }
         }
 
-        // Fallback template generation (pure news reporting, strictly no emojis/markdown, with article link & hashtags)
+        // Fallback when no AI model is available: report the story plainly.
         const cleanHeadline = this.cleanLinkedInText(article.title);
         const cleanSummary = this.cleanLinkedInText(article.summary);
+        const topicTag = this.toHashtag(category);
+        const body = cleanSummary && cleanSummary !== cleanHeadline ? `\n\n${cleanSummary}` : '';
 
-        const post = `${cleanHeadline}
+        return `${cleanHeadline}${body}
 
-${cleanSummary}
+Read more: ${article.link}
 
-Read the full story: ${article.link}
+${[topicTag, '#News'].filter(Boolean).join(' ')}`.trim();
+    }
 
-#${category.toUpperCase()} #News #LatestUpdates #Innovation #IndustryTrends`;
+    toHashtag(value) {
+        const cleaned = String(value || '')
+            .replace(/[^a-zA-Z0-9 ]/g, ' ')
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean)
+            .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+            .join('');
+        return cleaned ? `#${cleaned}` : '';
+    }
 
-        return this.cleanLinkedInText(post);
+    // The model sometimes drops or rewrites the link; the post must always
+    // point at the real story.
+    ensureArticleLink(post, article) {
+        if (!article.link || post.includes(article.link)) {
+            return post;
+        }
+
+        const lines = post.split('\n');
+        const lastLine = lines[lines.length - 1] || '';
+        const hashtagsOnly = /^(\s*#\w+)+\s*$/.test(lastLine);
+        const linkLine = `Read more: ${article.link}`;
+
+        if (hashtagsOnly) {
+            lines.splice(lines.length - 1, 0, linkLine, '');
+            return lines.join('\n');
+        }
+        return `${post}\n\n${linkLine}`;
+    }
+
+    // Who is posting, in the words the person gave us. Left out entirely when
+    // nothing useful was provided, so the model does not invent a company.
+    describePoster() {
+        const info = this.companyInfo || {};
+        const services = Array.isArray(info.services) ? info.services.filter(Boolean) : (info.services ? [info.services] : []);
+        const industry = String(info.industry || '').trim();
+        const lines = [];
+
+        if (info.name) lines.push(`Company: ${info.name}`);
+        if (industry && industry.toLowerCase() !== 'general') lines.push(`Industry: ${industry}`);
+        if (services.length) lines.push(`What they do: ${services.slice(0, 6).join('; ')}`);
+
+        return lines.join('\n');
+    }
+
+    buildNewsPostPrompt(category, article) {
+        const poster = this.describePoster();
+        const published = article.publishedAt
+            ? new Date(article.publishedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+            : 'recent';
+        const audience = (this.companyInfo?.industry && String(this.companyInfo.industry).toLowerCase() !== 'general')
+            ? `people who work in ${this.companyInfo.industry}`
+            : `people who follow ${category} news`;
+
+        return `Write a LinkedIn post about the news story below.
+
+THE STORY
+Headline: ${article.title}
+Summary: ${article.summary}
+Source: ${article.source || 'news report'}
+Published: ${published}
+Topic: ${category}
+Link: ${article.link}
+${poster ? `
+WHO IS POSTING
+${poster}
+` : ''}
+HOW TO WRITE IT
+- First line: say what happened, specifically and plainly. Do not open with phrases like "In today's fast-paced world", "Exciting news", "Big news" or a rhetorical question.
+- Then two or three short paragraphs: what happened, and why it matters to ${audience}.
+- Use only facts that are in the headline and summary above. Do not invent numbers, quotes, names or details. If the summary is thin, keep the post short rather than padding it.
+${poster ? '- Add one sentence of honest perspective from the point of view of the company above. Do not turn the post into an advertisement and do not suggest the company was involved in the story.\n' : ''}- End the body with one genuine question that invites people to comment.
+- After the body, on its own line, write exactly: Read more: ${article.link}
+- Last line: 3 to 5 specific hashtags for this story. Avoid filler hashtags such as #Innovation, #BusinessGrowth or #Success.
+- Length: 90 to 170 words before the link line.
+- Separate paragraphs with a blank line. Plain text only: no markdown, no emojis, no bullet symbols, no headings.
+- Sound like a thoughtful person sharing something they read, not a press release.
+
+Return only the post text.`;
     }
 
     async generateCalendar(startDate, endDate, countryCodeOrOptions = 'US', options = {}) {
@@ -302,10 +365,11 @@ Read the full story: ${article.link}
         }
 
         const mode = opts.mode === 'rotation' ? 'rotation' : 'block';
-        let categories = Array.isArray(opts.categories) ? opts.categories.map(c => String(c).toLowerCase().trim()) : [];
-        const validCategories = ['tech', 'science', 'dental'];
-
-        categories = categories.filter(c => validCategories.includes(c));
+        // Built-in categories (tech, science, dental) or any custom topic.
+        let categories = (Array.isArray(opts.categories) ? opts.categories : [])
+            .map((c) => newsService.normalizeCategory(c))
+            .filter(Boolean)
+            .slice(0, 14);
         if (categories.length === 0) {
             categories = ['tech', 'science', 'dental'];
         }
@@ -322,6 +386,11 @@ Read the full story: ${article.link}
             const category = (mode === 'block') ? categories[0] : categories[i % categories.length];
 
             const article = await newsService.getArticleForCategory(category, usedUrls);
+            if (!article) {
+                // No canned stand-in: better to say so than to write a post
+                // about news that did not happen.
+                throw new Error(`No recent news could be loaded for "${category}". Try again in a few minutes or pick another topic.`);
+            }
             let post = null;
 
             try {
@@ -333,6 +402,8 @@ Read the full story: ${article.link}
                     articleTitle: article.title,
                     articleLink: article.link,
                     articleSummary: article.summary,
+                    articleSource: article.source || '',
+                    articlePublishedAt: article.publishedAt || null,
                     post: post,
                     model: currentModel
                 });

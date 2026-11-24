@@ -80,9 +80,16 @@
             background: rgba(255, 255, 255, 0.04);
             color: #fff;
             padding: 0.82rem 1rem;
+            font-family: inherit;
+            font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
             margin-top: 0.55rem;
+        }
+
+        .btn:focus-visible {
+            outline: 2px solid #93c5fd;
+            outline-offset: 2px;
         }
 
         .btn.primary {
@@ -120,14 +127,22 @@
         }
 
     </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="/logo.png">
+    <meta name="theme-color" content="#0a0f1e">
+    <link rel="stylesheet" href="/theme.css">
 </head>
-<body>
+<body class="page-auth">
     <main class="shell">
+        <div class="brand">
+            <img src="/logo.png" alt="">
+            <span>PostCraft AI</span>
+        </div>
         <h1>Welcome back</h1>
         <div class="status" id="authStatus">Loading secure sign-in...</div>
         <div class="session" id="authSessionLabel">No active session.</div>
 
-        <button class="btn" id="authLinkedInBtn" type="button" style="background: linear-gradient(135deg, #0a66c2, #004182); border: none; color: #fff; font-weight: 600; padding: 0.95rem 1rem;">Sign in with LinkedIn</button>
+        <button class="btn linkedin" id="authLinkedInBtn" type="button">Sign in with LinkedIn</button>
         <button class="btn" id="authSignOutBtn" type="button" style="display:none;">Sign Out</button>
 
         <p class="note">Signing in with LinkedIn also connects your account for publishing — one step, no separate password.</p>
@@ -142,7 +157,9 @@
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const requestedNext = String(urlParams.get('next') || '').trim();
-        const safeNextPath = requestedNext.startsWith('/') ? requestedNext : '/index.html?skipIntro=1';
+        // Only same-site paths: "//host" and "/\host" would leave the site.
+        const isLocalPath = /^\/(?![\/\\])/.test(requestedNext);
+        const safeNextPath = isLocalPath ? requestedNext : '/index.html?skipIntro=1';
         const linkedinStatus = urlParams.get('linkedin');
         const linkedinMessage = urlParams.get('message');
 
@@ -155,13 +172,13 @@
 
         function setAuthStatus(message, isError = false) {
             authStatus.textContent = message;
-            authStatus.style.color = isError ? '#fecaca' : '#b9c8ff';
+            authStatus.style.color = isError ? '#fecaca' : '';
         }
 
         function redirectAfterSignIn() {
             if (hasRedirectedAfterSignIn) return;
             hasRedirectedAfterSignIn = true;
-            sessionStorage.setItem('postcraftIntroSeen', '1');
+            localStorage.setItem('postcraftIntroSeen', '1');
             window.location.href = safeNextPath;
         }
 

@@ -417,174 +417,1213 @@
             color: #0a132b;
             border-color: rgba(255, 255, 255, 0.75);
         }
+        /* Grid and form children may shrink below their content width, so a
+           long account name, email or URL wraps instead of pushing a card
+           out of its column. */
+        .grid > *,
+        form > *,
+        .row-2 > *,
+        .list > *,
+        label,
+        .oauth-card > *,
+        .auth-card > * {
+            min-width: 0;
+        }
+        .card,
+        .list-item,
+        .queue-card,
+        .oauth-status,
+        .auth-session,
+        .banner,
+        .success-banner {
+            overflow-wrap: anywhere;
+        }
+        input, select, textarea {
+            color-scheme: dark;
+        }
+        select option {
+            background: #1e293b;
+            color: #fff;
+        }
+        input:focus-visible,
+        select:focus-visible,
+        textarea:focus-visible {
+            outline: none;
+            border-color: #22d3ee;
+            box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.2);
+        }
+        button:focus-visible,
+        a:focus-visible {
+            outline: 2px solid #67e8f9;
+            outline-offset: 2px;
+        }
+        button:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+        .span-6 { grid-column: span 6; }
+        .span-8 { grid-column: span 8; }
+        .auth-title {
+            font-size: 1.15rem;
+            letter-spacing: 0;
+        }
+        .auth-card {
+            gap: 0.6rem;
+            padding: 1rem;
+        }
+        .auth-actions {
+            margin-top: 0.4rem;
+        }
+        .small-btn {
+            text-align: center;
+            text-decoration: none;
+        }
+        .cta-pill {
+            display: inline-block;
+            border: 1px solid transparent;
+            cursor: pointer;
+            color: #fff;
+            font-weight: 600;
+            padding: 0.8rem 1.4rem;
+            border-radius: 999px;
+            text-decoration: none;
+        }
+        .cta-pill.linkedin { background: linear-gradient(135deg, #0a66c2, #004182); }
+        .cta-pill.telegram { background: linear-gradient(135deg, #29a9eb, #0088cc); }
+        .oauth-actions .small-btn { width: auto; }
+        .pattern-box {
+            background: rgba(15,23,42,0.45);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 18px;
+            padding: 1.25rem;
+        }
+        .pattern-box h3 {
+            font-size: 1rem;
+            margin-bottom: 0.8rem;
+        }
+        .pattern-modes {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        .pattern-modes button { flex: 1; }
+        .pattern-add {
+            display: flex;
+            gap: 0.4rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        /* Publishing Queue calendar. One colour per post status, shared by
+           the calendar chips, the legend and the pills in the day pop-up. */
+        .st-scheduled { --st: #60a5fa; --st-bg: rgba(59,130,246,0.22); --st-fg: #bfdbfe; }
+        .st-pending   { --st: #facc15; --st-bg: rgba(250,204,21,0.18); --st-fg: #fde68a; }
+        .st-published { --st: #4ade80; --st-bg: rgba(34,197,94,0.2);  --st-fg: #bbf7d0; }
+        .st-failed    { --st: #f87171; --st-bg: rgba(239,68,68,0.22); --st-fg: #fecaca; }
+        .pill.st-scheduled,
+        .pill.st-pending,
+        .pill.st-published,
+        .pill.st-failed {
+            background: var(--st-bg);
+            color: var(--st-fg);
+        }
+        .queue-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.75rem 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.5rem;
+        }
+        .card .queue-head h2 {
+            margin-bottom: 0;
+        }
+        .cal-nav {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .cal-month {
+            min-width: 10.5rem;
+            text-align: center;
+            font-weight: 700;
+        }
+        .cal-nav-btn,
+        .cal-today-btn {
+            flex: none;
+            width: 38px;
+            height: 38px;
+            padding: 0;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.16);
+            color: #fff;
+            font-size: 1.25rem;
+            font-weight: 600;
+            line-height: 1;
+        }
+        .cal-today-btn {
+            width: auto;
+            padding: 0 0.9rem;
+            font-size: 0.88rem;
+        }
+        .cal-nav-btn:hover,
+        .cal-today-btn:hover {
+            background: rgba(255,255,255,0.16);
+        }
+        .cal-summary {
+            margin-bottom: 0.9rem;
+        }
+        .cal-grid {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: 0.5rem;
+        }
+        .cal-grid > * {
+            min-width: 0;
+        }
+        .cal-weekday {
+            text-align: center;
+            font-size: 0.74rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: rgba(255,255,255,0.55);
+            padding: 0.2rem 0 0.25rem;
+        }
+        .cal-day {
+            min-height: 112px;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0.3rem;
+            padding: 0.5rem;
+            border-radius: 14px;
+            background: rgba(15,23,42,0.32);
+            border: 1px solid rgba(255,255,255,0.08);
+            color: #fff;
+            font-weight: 400;
+            text-align: left;
+        }
+        button.cal-day {
+            cursor: pointer;
+            background: rgba(15,23,42,0.6);
+            border-color: rgba(34,211,238,0.35);
+        }
+        button.cal-day:hover {
+            background: rgba(34,211,238,0.12);
+            border-color: #22d3ee;
+        }
+        .cal-day.outside {
+            opacity: 0.4;
+        }
+        .cal-day-num {
+            align-self: flex-start;
+            min-width: 1.6rem;
+            height: 1.6rem;
+            padding: 0 0.35rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: rgba(255,255,255,0.82);
+        }
+        .cal-day.today .cal-day-num {
+            background: #22d3ee;
+            color: #0f172a;
+        }
+        .cal-chip {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            min-width: 0;
+            padding: 0.22rem 0.45rem;
+            border-radius: 8px;
+            border-left: 3px solid var(--st);
+            background: var(--st-bg);
+            color: var(--st-fg);
+            font-size: 0.72rem;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+        /* The post type is the useful label, so it gets the space; the
+           time is dropped first when the cell is too narrow for both. */
+        .cal-chip-time {
+            flex: none;
+            margin-left: auto;
+            opacity: 0.8;
+            font-weight: 500;
+        }
+        .cal-chip-type {
+            flex: 1 1 auto;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            text-transform: capitalize;
+        }
+        @media (max-width: 1150px) {
+            .cal-chip-time { display: none; }
+        }
+        .cal-more {
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.65);
+        }
+        .cal-legend {
+            display: flex;
+            gap: 0.4rem 1.1rem;
+            flex-wrap: wrap;
+            margin-top: 0.9rem;
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.72);
+        }
+        .cal-legend span {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .cal-legend span::before {
+            content: '';
+            width: 10px;
+            height: 10px;
+            border-radius: 3px;
+            background: var(--st);
+        }
+        .queue-card-top .actions {
+            margin-top: 0;
+            align-items: center;
+        }
+        .queue-card-top .pill {
+            margin-bottom: 0;
+        }
+        .queue-copy.placeholder {
+            color: rgba(255,255,255,0.6);
+            font-style: italic;
+            font-weight: 400;
+        }
+        .queue-status-line.error {
+            color: #fca5a5;
+        }
+        .modal-card {
+            max-height: calc(100vh - 2rem);
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.28) transparent;
+        }
+        .modal-close {
+            flex: none;
+            padding: 0;
+            line-height: 1;
+            font-size: 1.3rem;
+        }
+        /* ---- Visual refresh --------------------------------------------
+           Colours, radii and shadows come from the tokens in /theme.css so
+           this page matches the home page, generator and sign-in. These
+           rules sit after the original ones above and replace their look;
+           the phone overrides below still come last. */
+        .container {
+            padding: 2.5rem 1.5rem 4rem;
+        }
+        .grid {
+            gap: 1.25rem;
+            margin-top: 1.75rem;
+        }
+        .card {
+            padding: 1.5rem;
+            background: var(--surface);
+            backdrop-filter: none;
+            border: 1px solid var(--line);
+            border-radius: var(--radius-lg);
+        }
+        .card h2 {
+            font-size: 1.1rem;
+            letter-spacing: -0.01em;
+            margin-bottom: 0.4rem;
+        }
+        .card p {
+            color: var(--muted);
+            font-size: 0.93rem;
+            margin-bottom: 1.1rem;
+        }
+        label {
+            gap: 0.4rem;
+            font-size: 0.84rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+        input, select, textarea {
+            padding: 0.68rem 0.85rem;
+            background: var(--surface-2);
+            border: 1px solid var(--line-strong);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            font-weight: 400;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        input:hover, select:hover, textarea:hover {
+            border-color: rgba(148, 163, 184, 0.48);
+        }
+        input:focus-visible, select:focus-visible, textarea:focus-visible {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.18);
+        }
+        /* The bare button is the form's submit: the one primary action. */
+        button {
+            background: var(--accent);
+            color: var(--accent-ink);
+            border-radius: 12px;
+            font-weight: 650;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        button[type="submit"]:hover:not(:disabled) {
+            background: var(--accent-hover);
+        }
+        .secondary,
+        .small-btn,
+        .cal-nav-btn,
+        .cal-today-btn {
+            background: var(--surface-2);
+            border: 1px solid var(--line-strong);
+            color: var(--text);
+            font-weight: 600;
+        }
+        .secondary:hover:not(:disabled),
+        .small-btn:hover,
+        .cal-nav-btn:hover,
+        .cal-today-btn:hover {
+            background: var(--surface-3);
+        }
+        .small {
+            border-radius: 999px;
+            padding: 0.4rem 0.8rem;
+            font-size: 0.84rem;
+        }
+        .cal-nav-btn,
+        .cal-today-btn {
+            border-radius: var(--radius-sm);
+        }
+        .meta {
+            color: var(--muted);
+        }
+        .list-item {
+            background: var(--surface-2);
+            border-color: var(--line);
+            border-radius: var(--radius);
+        }
+        .success-banner {
+            border-radius: var(--radius);
+        }
+
+        /* Connections: three flat rows instead of nested cards */
+        .conn {
+            display: grid;
+            gap: 0.45rem;
+            padding: 1rem 0;
+            border-top: 1px solid var(--line);
+        }
+        .conn > * {
+            min-width: 0;
+        }
+        .conn:last-child {
+            padding-bottom: 0;
+        }
+        .conn-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.6rem 0.75rem;
+            flex-wrap: wrap;
+        }
+        .conn-title {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+            font-size: 0.98rem;
+            font-weight: 650;
+        }
+        .conn-icon {
+            flex: none;
+            width: 28px;
+            height: 28px;
+            display: inline-grid;
+            place-items: center;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 0.8rem;
+            font-weight: 800;
+        }
+        .conn-icon.session { background: var(--surface-3); }
+        .conn-icon.linkedin { background: var(--linkedin); }
+        .conn-icon.telegram { background: var(--telegram); }
+        .conn-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .conn-actions .small-btn,
+        .cta-pill {
+            width: auto;
+            padding: 0.5rem 0.9rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.86rem;
+        }
+        .cta-pill.linkedin { background: var(--linkedin); }
+        .cta-pill.telegram { background: var(--telegram); }
+        .cta-pill.is-connected {
+            background: var(--surface-2);
+            border-color: var(--line-strong);
+            color: var(--text);
+        }
+        .cta-pill.is-disabled {
+            pointer-events: none;
+            opacity: 0.55;
+        }
+        .conn-status {
+            color: var(--muted);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            overflow-wrap: anywhere;
+        }
+        .conn-status.is-ok { color: #86efac; }
+        .conn-status.is-error,
+        .conn-note.is-error { color: #fca5a5; }
+        .conn-note {
+            color: var(--faint);
+            font-size: 0.84rem;
+            line-height: 1.5;
+        }
+
+        /* Schedule form: category pattern */
+        .pattern-box {
+            background: var(--inset);
+            border-color: var(--line);
+            border-radius: var(--radius);
+        }
+        .pattern-box h3 {
+            font-size: 0.92rem;
+        }
+        .pattern-modes {
+            gap: 0.3rem;
+            padding: 0.3rem;
+            background: var(--surface-2);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+        }
+        .mode-btn {
+            padding: 0.6rem 0.9rem;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 9px;
+            color: var(--muted);
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        .mode-btn:hover {
+            color: var(--text);
+        }
+        .mode-btn.is-active {
+            background: var(--accent-soft);
+            border-color: var(--accent-line);
+            color: var(--text);
+        }
+        .pattern-hint {
+            color: var(--muted);
+            font-size: 0.84rem;
+            font-weight: 500;
+        }
+        .sched-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin: 0.5rem 0 0.85rem;
+        }
+        .sched-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.35rem 0.5rem 0.35rem 0.8rem;
+            background: rgba(59, 130, 246, 0.18);
+            border: 1px solid rgba(96, 165, 250, 0.4);
+            border-radius: 999px;
+            color: #bfdbfe;
+            font-size: 0.84rem;
+            font-weight: 600;
+        }
+        .sched-chip button {
+            width: 22px;
+            height: 22px;
+            padding: 0;
+            display: inline-grid;
+            place-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            color: #fff;
+            font-size: 0.72rem;
+            font-weight: 600;
+            line-height: 1;
+        }
+        .sched-chip button:hover {
+            background: rgba(255, 255, 255, 0.22);
+        }
+        .sched-chip button.remove {
+            color: #fca5a5;
+        }
+
+        /* Calendar */
+        .cal-day {
+            min-height: 92px;
+            background: transparent;
+            border-color: var(--line);
+            border-radius: 12px;
+        }
+        button.cal-day {
+            background: var(--surface-2);
+            border-color: var(--line-strong);
+            color: var(--text);
+            font-weight: 400;
+        }
+        button.cal-day:hover {
+            background: var(--surface-3);
+            border-color: var(--accent-line);
+        }
+        .cal-day.outside {
+            opacity: 0.35;
+        }
+        .cal-day.today {
+            border-color: var(--accent-line);
+        }
+        .cal-day.today .cal-day-num {
+            background: var(--accent);
+            color: var(--accent-ink);
+        }
+        .cal-weekday {
+            color: var(--faint);
+        }
+
+        /* Month totals above the calendar */
+        .cal-stats {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 0.6rem;
+            margin: 0.9rem 0 0.75rem;
+        }
+        .cal-stat {
+            display: grid;
+            gap: 0.15rem;
+            padding: 0.7rem 0.9rem;
+            background: var(--surface-2);
+            border: 1px solid var(--line);
+            border-left: 3px solid var(--st);
+            border-radius: 12px;
+        }
+        .cal-stat-num {
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+        }
+        .cal-stat-label {
+            color: var(--muted);
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        .cal-stat.is-zero .cal-stat-num {
+            color: var(--faint);
+        }
+
+        /* Page header: title on the left, the one primary action on the right */
+        .hero {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 1rem 2rem;
+            flex-wrap: wrap;
+        }
+        .hero-action {
+            flex: none;
+            padding: 0.75rem 1.2rem;
+            box-shadow: 0 10px 26px rgba(34, 211, 238, 0.2);
+        }
+        .hero-action:hover {
+            background: var(--accent-hover);
+        }
+
+        /* Status tiles double as filters for the calendar */
+        button.cal-stat {
+            width: 100%;
+            color: var(--text);
+            font-weight: 400;
+            text-align: left;
+            cursor: pointer;
+        }
+        button.cal-stat:hover {
+            background: var(--surface-3);
+        }
+        button.cal-stat[aria-pressed="true"] {
+            background: var(--st-bg);
+            border-color: var(--st);
+        }
+        .cal-grid.is-filtered .cal-chip:not(.is-match) {
+            opacity: 0.2;
+        }
+        .cal-grid.is-filtered button.cal-day:not(.has-match) {
+            background: transparent;
+            border-color: var(--line);
+        }
+        .cal-day:nth-child(7n + 1) .cal-day-num,
+        .cal-day:nth-child(7n) .cal-day-num {
+            color: var(--faint);
+        }
+        .cal-day.today:nth-child(n) .cal-day-num {
+            color: var(--accent-ink);
+        }
+        .cal-chip-time {
+            display: none;
+        }
+        .cal-grid {
+            gap: 0.4rem;
+        }
+        .cal-day {
+            padding: 0.4rem;
+        }
+        .cal-chip {
+            padding: 0.2rem 0.4rem;
+        }
+        .cal-summary a {
+            color: var(--accent);
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .custom-topic-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+        .custom-topic-row input {
+            flex: 1;
+            min-width: 0;
+        }
+        .custom-topic-row button {
+            flex: none;
+            padding: 0.6rem 0.9rem;
+            font-size: 0.88rem;
+            white-space: nowrap;
+        }
+        .form-hint {
+            color: var(--faint);
+            font-size: 0.84rem;
+            line-height: 1.5;
+        }
+        .queue-metrics {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .queue-source {
+            padding: 0.6rem 0.8rem;
+            background: var(--inset);
+            border-left: 3px solid var(--accent);
+            border-radius: 8px;
+            color: var(--muted);
+            font-size: 0.85rem;
+            line-height: 1.45;
+        }
+        .queue-source a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+        .queue-source a:hover {
+            text-decoration: underline;
+        }
+        .queue-btn.danger {
+            margin-right: auto;
+            border-color: rgba(248, 113, 113, 0.45);
+            color: #fca5a5;
+        }
+        .queue-btn.danger:hover:not(:disabled) {
+            background: rgba(239, 68, 68, 0.16);
+        }
+        .list-item-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.75rem;
+        }
+        .list-item-head .queue-btn {
+            flex: none;
+            margin: 0;
+            padding: 0.35rem 0.7rem;
+            font-size: 0.8rem;
+        }
+        .topic-list {
+            text-transform: capitalize;
+        }
+
+        /* Pop-up extras */
+        .modal-head-actions {
+            display: flex;
+            gap: 0.4rem;
+        }
+        .modal-close:disabled {
+            opacity: 0.35;
+        }
+        .modal-intro {
+            color: var(--muted);
+            font-size: 0.93rem;
+            line-height: 1.5;
+        }
+        .schedule-modal {
+            width: min(640px, 100%);
+        }
+        .schedule-modal button[type="submit"] {
+            width: 100%;
+        }
+        .upnext-item .pill {
+            font-size: 0.72rem;
+        }
+
+        /* Sidebar: next posts, connections, schedules */
+        .grid {
+            align-items: start;
+        }
+        .stack {
+            display: grid;
+            gap: 1.25rem;
+        }
+        .upnext {
+            display: grid;
+            gap: 0.5rem;
+        }
+        .upnext-item {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            width: 100%;
+            padding: 0.6rem 0.7rem;
+            background: var(--surface-2);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            color: var(--text);
+            font-weight: 400;
+            text-align: left;
+            cursor: pointer;
+        }
+        .upnext-item:hover {
+            background: var(--surface-3);
+            border-color: var(--accent-line);
+        }
+        .upnext-date {
+            flex: none;
+            width: 46px;
+            padding: 0.3rem 0;
+            display: grid;
+            justify-items: center;
+            background: var(--inset);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            line-height: 1.15;
+        }
+        .upnext-date small {
+            color: var(--accent);
+            font-size: 0.64rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+        .upnext-date b {
+            font-size: 1.05rem;
+        }
+        .upnext-body {
+            flex: 1;
+            min-width: 0;
+            display: grid;
+            gap: 0.1rem;
+        }
+        .upnext-type {
+            font-size: 0.92rem;
+            font-weight: 600;
+            text-transform: capitalize;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .upnext-time {
+            color: var(--muted);
+            font-size: 0.82rem;
+        }
+        .upnext-item .pill {
+            flex: none;
+            margin-bottom: 0;
+        }
+        .queue-date {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .conn-status.is-ok::before {
+            content: '';
+            display: inline-block;
+            width: 0.5rem;
+            height: 0.5rem;
+            margin-right: 0.45rem;
+            border-radius: 50%;
+            background: #4ade80;
+            vertical-align: 0.08em;
+        }
+
+        /* Day pop-up and editor */
+        .modal-overlay {
+            background: rgba(4, 8, 18, 0.74);
+            backdrop-filter: blur(4px);
+        }
+        .modal-card {
+            padding: 1.5rem;
+            background: var(--surface);
+            border: 1px solid var(--line-strong);
+            border-radius: var(--radius-lg);
+        }
+        .modal-close {
+            background: var(--surface-2);
+            border: 1px solid var(--line-strong);
+            color: var(--text);
+            width: 38px;
+            height: 38px;
+        }
+        .queue-card {
+            background: var(--surface-2);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+        }
+        .queue-copy {
+            color: var(--text);
+            font-weight: 400;
+        }
+        .queue-metrics {
+            background: var(--inset);
+            border-color: var(--line);
+            border-radius: 12px;
+        }
+        .metric-label {
+            color: var(--faint);
+        }
+        .metric-value {
+            color: var(--accent);
+            font-weight: 700;
+        }
+        .queue-status-line {
+            color: var(--muted);
+        }
+        .queue-btn {
+            background: transparent;
+            border: 1px solid var(--line-strong);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            font-weight: 600;
+        }
+        .queue-btn:hover:not(:disabled) {
+            background: var(--surface-3);
+        }
+        .queue-btn.primary {
+            background: var(--accent);
+            border: 1px solid transparent;
+            color: var(--accent-ink);
+            font-weight: 650;
+        }
+        .queue-btn.primary:hover:not(:disabled) {
+            background: var(--accent-hover);
+        }
+
         @media (max-width: 960px) {
-            .span-4, .span-5, .span-7, .span-12 { grid-column: span 12; }
+            .span-4, .span-5, .span-6, .span-7, .span-8, .span-12 { grid-column: span 12; }
+        }
+        /* Below this width the calendar cells get too narrow to label the
+           posts, so the calendar takes the full row and the sidebar cards
+           line up underneath it. */
+        @media (max-width: 1100px) {
+            .span-8, .stack.span-4 { grid-column: span 12; }
+            .stack {
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                align-items: start;
+            }
+        }
+        @media (max-width: 640px) {
+            .container { padding: 1.5rem 1rem 3rem; }
             .row-2 { grid-template-columns: 1fr; }
-            .queue-metrics { grid-template-columns: 1fr; }
+            .card { border-radius: 16px; padding: 1.1rem; }
+            .modal-card { padding: 1.1rem; border-radius: 16px; }
+            .hero-action { width: 100%; }
+            .cal-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .pattern-box { padding: 1rem; }
+            .pattern-modes { flex-direction: column; }
+            /* Phone calendar: cells are too narrow for text, so each post
+               becomes a coloured bar; tapping the day opens the details. */
+            .queue-head { align-items: stretch; flex-direction: column; }
+            .cal-month { flex: 1; min-width: 0; }
+            .cal-grid { gap: 0.25rem; }
+            .cal-weekday { font-size: 0.64rem; letter-spacing: 0; }
+            .cal-day { min-height: 60px; padding: 0.3rem 0.2rem; border-radius: 10px; align-items: center; gap: 0.2rem; }
+            .cal-day-num { align-self: center; min-width: 1.5rem; height: 1.5rem; font-size: 0.78rem; }
+            .cal-chip { width: 100%; height: 6px; padding: 0; border-left: 0; border-radius: 999px; background: var(--st); }
+            .cal-chip span { display: none; }
+            .cal-more { font-size: 0.62rem; }
+            .queue-metrics { gap: 0.5rem; padding: 0.75rem; }
+            .metric-label { font-size: 0.64rem; letter-spacing: 0; overflow-wrap: normal; }
+            .queue-actions { justify-content: stretch; }
+            .queue-actions .queue-btn { flex: 1 1 auto; }
+            .modal-actions .queue-btn { flex: 1 1 auto; }
         }
 </style>
+    <link rel="icon" type="image/png" href="/logo.png">
+    <meta name="theme-color" content="#0a0f1e">
+    <link rel="stylesheet" href="/theme.css">
 
 </head>
-<body>
+<body class="page-publisher">
+    <header class="site-header">
+        <div class="site-header-inner">
+            <a class="brand" href="/index.html?skipIntro=1">
+                <img src="/logo.png" alt="">
+                <span>PostCraft AI</span>
+            </a>
+            <nav class="site-nav" aria-label="Main">
+                <a href="/index.html?skipIntro=1">Home</a>
+                <a href="/generator.html?platform=linkedin">Generator</a>
+                <a href="/publisher.html" aria-current="page">Publishing Hub</a>
+            </nav>
+        </div>
+    </header>
+
     <div class="container">
-        <div class="topbar">
-            <a class="nav-link" href="/index.html?skipIntro=1">Back to Home</a>
-            <a class="nav-link" href="/generator.html?platform=linkedin">Open Generator</a>
-        </div>
-
         <section class="hero">
-            <h1>Publishing Hub</h1>
-            <p>Connect a LinkedIn account, auto-generate 7 to 10 posts per week, and publish on a schedule.</p>
+            <div>
+                <h1>Publishing Hub</h1>
+                <p>Review every post on the calendar before it goes out to LinkedIn.</p>
+            </div>
+            <button type="button" class="hero-action with-ico" id="newScheduleBtn">
+                <span class="ico ico-calendar" aria-hidden="true"></span> New schedule
+            </button>
         </section>
-
-        <div class="banner">
-            LinkedIn publishing uses direct user login so the user can connect the right account before scheduling posts.
-        </div>
 
         <div class="success-banner" id="oauthBanner"></div>
 
         <div class="grid">
-            <section class="card span-5">
-                <h2>Connect Accounts</h2>
-                <p>Use LinkedIn login to connect the account that should be used for scheduling and publishing.</p>
-                <div class="auth-card">
-                    <h3 class="auth-title">Session Required</h3>
-                    <div class="auth-status" id="authStatus">Checking active session...</div>
-                    <div class="auth-session" id="authSessionLabel">No active session.</div>
-                    <div class="auth-actions">
-                        <a class="small-btn" id="authBackToLogin" href="/auth.html?next=/publisher.html">Go To Sign In</a>
-                        <button type="button" class="small-btn" id="authSignOutBtn" style="display:none;">Sign Out</button>
+            <!-- Main column: the calendar is what people come here for. -->
+            <section class="card span-8">
+                <div class="queue-head">
+                    <h2>Publishing Queue</h2>
+                    <div class="cal-nav">
+                        <button type="button" class="cal-nav-btn" id="calPrev" aria-label="Previous month">&lsaquo;</button>
+                        <div class="cal-month" id="calMonthLabel" aria-live="polite"></div>
+                        <button type="button" class="cal-nav-btn" id="calNext" aria-label="Next month">&rsaquo;</button>
+                        <button type="button" class="cal-today-btn" id="calToday">Today</button>
                     </div>
                 </div>
-                <div class="oauth-card">
-                    <h3>LinkedIn Account Connection</h3>
-                    <div class="oauth-status" id="linkedinOAuthStatus">Checking LinkedIn OAuth status...</div>
-                    <div class="oauth-actions">
-                        <a id="linkedinLoginBtn" href="/auth/linkedin/start?next=publisher" style="display:inline-block; background: linear-gradient(135deg, #0a66c2, #004182); border: none; cursor: pointer; color: #fff; font-weight: 600; padding: 0.85rem 1.4rem; border-radius: 999px; text-decoration: none;">
-                            Connect with LinkedIn
-                        </a>
+                <!-- Month totals; the coloured bar on each tile doubles as the
+                     legend for the calendar below. -->
+                <div class="cal-stats" id="calStats"></div>
+                <div class="meta cal-summary" id="calSummary"></div>
+                <div id="queueList" class="cal-grid"></div>
+            </section>
+
+            <!-- Sidebar: what is next, what is connected, what is scheduled. -->
+            <div class="stack span-4">
+            <section class="card">
+                <h2>Up next</h2>
+                <div id="upNextList" class="upnext"></div>
+            </section>
+
+            <section class="card">
+                <h2>Connections</h2>
+                <p>Your session, the LinkedIn account posts are published to, and Telegram for approvals.</p>
+
+                <div class="conn">
+                    <div class="conn-head">
+                        <h3 class="conn-title">
+                            <span class="conn-icon session" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0 2c-4.2 0-7.5 2-7.5 4.6V20h15v-1.4c0-2.600-3.300-4.600-7.500-4.600Z"/></svg>
+                            </span>
+                            <span id="authTitle">Checking Session</span>
+                        </h3>
+                        <div class="conn-actions">
+                            <a class="small-btn" id="authBackToLogin" href="/auth.html?next=/publisher.html">Go To Sign In</a>
+                            <button type="button" class="small-btn" id="authSignOutBtn" style="display:none;">Sign Out</button>
+                        </div>
                     </div>
-                    <div class="meta">Connects your LinkedIn account using direct OAuth and saves your publishing access token automatically.</div>
+                    <div class="conn-status" id="authSessionLabel">No active session.</div>
+                    <div class="conn-note" id="authStatus">Checking active session...</div>
                 </div>
-                <div class="oauth-card">
-                    <h3>Telegram Confirmations</h3>
-                    <div class="oauth-status" id="telegramStatus">Checking Telegram link status...</div>
-                    <div class="oauth-actions">
-                        <a id="telegramLinkBtn" href="#" target="_blank" rel="noopener" style="display:inline-block; background: linear-gradient(135deg, #29a9eb, #0088cc); border: none; cursor: pointer; color: #fff; font-weight: 600; padding: 0.85rem 1.4rem; border-radius: 999px; text-decoration: none;">
-                            Link Telegram
-                        </a>
-                        <button type="button" class="small-btn" id="telegramUnlinkBtn" style="display:none;">Unlink</button>
+
+                <div class="conn">
+                    <div class="conn-head">
+                        <h3 class="conn-title">
+                            <span class="conn-icon linkedin" aria-hidden="true">in</span>
+                            LinkedIn
+                        </h3>
+                        <div class="conn-actions">
+                            <a id="linkedinLoginBtn" class="cta-pill linkedin" href="/auth/linkedin/start?next=publisher">
+                                Connect with LinkedIn
+                            </a>
+                        </div>
                     </div>
-                    <div class="meta">Before a scheduled post goes out, PostCraft AI sends you 3 options on Telegram — tap one to generate and publish it.</div>
+                    <div class="conn-status" id="linkedinOAuthStatus">Checking LinkedIn OAuth status...</div>
+                </div>
+
+                <div class="conn">
+                    <div class="conn-head">
+                        <h3 class="conn-title">
+                            <span class="conn-icon telegram" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M21.4 3.6 2.9 10.700c-.9.400-.9 1.100 0 1.400l4.700 1.500 1.800 5.600c.2.600.600.700 1.100.300l2.600-2.100 4.600 3.400c.600.400 1.100.200 1.300-.600l3-14.900c.200-1-.4-1.500-1.300-1.200Zm-3.400 3.600-7.600 6.900-.3 3.200-1.500-4.600 9-5.800c.400-.300.800 0 .4.300Z"/></svg>
+                            </span>
+                            Telegram approvals
+                        </h3>
+                        <div class="conn-actions">
+                            <a id="telegramLinkBtn" class="cta-pill telegram" href="#" target="_blank" rel="noopener">
+                                Link Telegram
+                            </a>
+                            <button type="button" class="small-btn" id="telegramUnlinkBtn" style="display:none;">Unlink</button>
+                        </div>
+                    </div>
+                    <div class="conn-status" id="telegramStatus">Checking Telegram link status...</div>
+                    <div class="conn-note">Before a scheduled post goes out, PostCraft AI sends you 3 options on Telegram — tap one to generate and publish it.</div>
                 </div>
             </section>
 
-            <section class="card span-7">
-                <h2>Create Weekly Schedule</h2>
-                <p>Generate a weekly publishing queue from your business context. The scheduler can spread 7 to 10 items per week across the selected platform.</p>
+            <section class="card" id="accountsCard" hidden>
+                <h2>Connected Accounts</h2>
+                <div id="accountsList" class="list"></div>
+            </section>
+
+            <section class="card">
+                <h2>Weekly Schedules</h2>
+                <div id="schedulesList" class="list"></div>
+            </section>
+            </div>
+        </div>
+    </div>
+
+    <!-- New weekly schedule (opened from the page header) -->
+    <div class="modal-overlay" id="scheduleModal" role="dialog" aria-modal="true" aria-labelledby="scheduleModalTitle">
+        <div class="modal-card schedule-modal">
+            <div class="modal-head">
+                <h3 id="scheduleModalTitle">New weekly schedule</h3>
+                <button class="modal-close" id="scheduleModalClose" type="button" aria-label="Close">×</button>
+            </div>
+            <p class="modal-intro">Pick how often to post and which topics to rotate through. This fills the calendar with 7 to 10 posts per week.</p>
                 <form id="scheduleForm">
+                    <!-- LinkedIn is the only platform, so it is sent as a
+                         fixed value instead of a one-option dropdown. -->
+                    <input type="hidden" name="platform" id="schedulePlatform" value="linkedin">
+                    <label>LinkedIn account
+                        <select name="accountId" id="accountId" required></select>
+                    </label>
                     <div class="row-2">
-                        <label>Platform
-                            <select name="platform" id="schedulePlatform">
-                                <option value="linkedin">LinkedIn</option>
-                            </select>
-                        </label>
-                        <label>Connected Account
-                            <select name="accountId" id="accountId" required></select>
-                        </label>
-                    </div>
-                    <div class="row-2">
-                        <label>Posts Per Week
+                        <label>Posts per week
                             <select name="postsPerWeek">
-                                <option value="7">7</option>
-                                <option value="8">8</option>
-                                <option value="9">9</option>
-                                <option value="10">10</option>
+                                <option value="7">7 posts</option>
+                                <option value="8">8 posts</option>
+                                <option value="9">9 posts</option>
+                                <option value="10">10 posts</option>
                             </select>
                         </label>
-                        <label>Preferred Hour
-                            <input type="number" name="preferredHour" min="0" max="23" value="10">
+                        <label>Preferred time
+                            <!-- Options (0-23, shown as local clock times) are
+                                 filled in by the script below. -->
+                            <select name="preferredHour" id="preferredHour"></select>
                         </label>
                     </div>
                     <div class="row-2">
-                        <label>Start Date
+                        <label>Start date
                             <input type="date" name="startDate" id="startDate">
                         </label>
-                        <label>End Date
+                        <label>End date
                             <input type="date" name="endDate" id="endDate">
                         </label>
                     </div>
 
 
                     <!-- Content Category Pattern per Day Range -->
-                    <div style="background: rgba(15,23,42,0.45); border: 1px solid rgba(255,255,255,0.12); border-radius: 18px; padding: 1.25rem; margin-top: 0.5rem; margin-bottom: 0.5rem;">
-                        <h3 style="font-size: 1rem; color: #fff; margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.5rem;">
-                            📰 Content Category Pattern per Day Range
-                        </h3>
-                        <div style="display: flex; gap: 0.75rem; margin-bottom: 1rem;">
-                            <button type="button" class="secondary" id="schedModeRotation" onclick="setSchedPatternMode('rotation')" style="flex:1; background: rgba(6,182,212,0.25); border-color: #06b6d4; color: #67e8f9;">
-                                🔄 Rotation Mode (Repeating Order)
+                    <div class="pattern-box">
+                        <h3>Content categories</h3>
+                        <div class="pattern-modes">
+                            <button type="button" class="mode-btn with-ico is-active" id="schedModeRotation" onclick="setSchedPatternMode('rotation')">
+                                <span class="ico ico-repeat" aria-hidden="true"></span> Rotation (repeating order)
                             </button>
-                            <button type="button" class="secondary" id="schedModeBlock" onclick="setSchedPatternMode('block')" style="flex:1; opacity:0.6;">
-                                📦 Block Mode (Single Category)
+                            <button type="button" class="mode-btn with-ico" id="schedModeBlock" onclick="setSchedPatternMode('block')">
+                                <span class="ico ico-square" aria-hidden="true"></span> Block (single category)
                             </button>
                         </div>
 
                         <!-- Rotation Sequence View -->
                         <div id="schedRotationContainer">
-                            <label style="font-size: 0.85rem; color: rgba(255,255,255,0.7); margin-bottom: 0.5rem; display: block;">
-                                Daily Category Sequence (Day 1 → Day 2 → Day 3...):
-                            </label>
-                            <div id="schedCategoryChips" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;"></div>
-                            <div style="display: flex; gap: 0.4rem; align-items: center;">
-                                <span style="font-size: 0.8rem; color: rgba(255,255,255,0.6);">Add step:</span>
+                            <div class="pattern-hint">Daily sequence (Day 1 → Day 2 → Day 3…)</div>
+                            <div id="schedCategoryChips" class="sched-chips"></div>
+                            <div class="pattern-add">
+                                <span class="pattern-hint">Add step:</span>
                                 <button type="button" onclick="addSchedCategory('tech')" class="secondary small">+ Tech</button>
                                 <button type="button" onclick="addSchedCategory('science')" class="secondary small">+ Science</button>
                                 <button type="button" onclick="addSchedCategory('dental')" class="secondary small">+ Dental</button>
+                            </div>
+                            <!-- Any topic of your own: news for it is searched live. -->
+                            <div class="custom-topic-row">
+                                <input type="text" id="schedCustomTopic" maxlength="40" placeholder="Your own topic, e.g. electric vehicles" aria-label="Custom news topic">
+                                <button type="button" class="secondary" id="schedCustomTopicAdd">Add topic</button>
                             </div>
                         </div>
 
                         <!-- Block Mode View -->
                         <div id="schedBlockContainer" style="display: none;">
-                            <label>Fixed Category for All Days:
+                            <label>Category for every day
                                 <select id="schedSingleCategory">
                                     <option value="tech">Tech (TechCrunch Feed)</option>
                                     <option value="science">Science (ScienceDaily Feed)</option>
                                     <option value="dental">Dental (Dentistry Today Feed)</option>
+                                    <option value="__custom">Your own topic…</option>
                                 </select>
                             </label>
+                            <input type="text" id="schedBlockCustomTopic" maxlength="40" placeholder="e.g. electric vehicles" aria-label="Custom news topic" style="display: none; margin-top: 0.6rem;">
                         </div>
                     </div>
 
-                    <button type="submit">Create Schedule And Generate Queue</button>
+                    <p class="form-hint">
+                        Times are in your own time zone. When a post is due you get up to three fresh stories on
+                        Telegram, and it is published when you pick one. On this hosting plan the automatic check
+                        runs once a day, so a day's choices arrive together in the morning; opening this page also
+                        triggers it.
+                    </p>
+                    <button type="submit" id="scheduleSubmit">Create schedule</button>
                 </form>
-            </section>
+        </div>
+    </div>
 
-            <section class="card span-4">
-                <h2>Connected Accounts</h2>
-                <div id="accountsList" class="list"></div>
-            </section>
-
-            <section class="card span-4">
-                <h2>Weekly Schedules</h2>
-                <div id="schedulesList" class="list"></div>
-            </section>
-
-            <section class="card span-4">
-                <h2>Publishing Queue</h2>
-                <div id="queueList" class="list"></div>
-            </section>
+    <!-- Posts for the calendar day that was clicked -->
+    <div class="modal-overlay" id="queueDayModal" role="dialog" aria-modal="true" aria-labelledby="queueDayTitle">
+        <div class="modal-card">
+            <div class="modal-head">
+                <h3 id="queueDayTitle">Scheduled Posts</h3>
+                <div class="modal-head-actions">
+                    <!-- Step through the days that have posts -->
+                    <button class="modal-close" id="queueDayPrev" type="button" aria-label="Previous day with posts">&lsaquo;</button>
+                    <button class="modal-close" id="queueDayNext" type="button" aria-label="Next day with posts">&rsaquo;</button>
+                    <button class="modal-close" id="queueDayClose" type="button" aria-label="Close">×</button>
+                </div>
+            </div>
+            <div class="list" id="queueDayList"></div>
         </div>
     </div>
 
     <div class="modal-overlay" id="queueEditorModal">
         <div class="modal-card">
             <div class="modal-head">
-                <h3>Edit Queue Post</h3>
-                <button class="modal-close" id="queueEditorClose" type="button">×</button>
+                <h3>Edit post</h3>
+                <button class="modal-close" id="queueEditorClose" type="button" aria-label="Close">×</button>
             </div>
             <div class="meta" id="queueEditorMeta">Update the scheduled post content before publishing.</div>
-            <textarea id="queueEditorContent" placeholder="Edit the post content here"></textarea>
+            <label>Scheduled for
+                <input type="datetime-local" id="queueEditorWhen">
+            </label>
+            <label>Post text
+                <textarea id="queueEditorContent" placeholder="Write the post here, or leave it empty to choose from Telegram when it is due"></textarea>
+            </label>
             <div class="modal-actions">
                 <button class="queue-btn" id="queueEditorCancel" type="button">Cancel</button>
                 <button class="queue-btn primary" id="queueEditorSave" type="button">Save Changes</button>
@@ -597,7 +1636,12 @@
          below — index.js re-verifies its signature on every call (see
          requireAuth in index.js and services/oauthService.js). Nothing here
          is trusted just because the client sent it. -->
+    <script src="/ui.js"></script>
     <script>
+        // In-page notifications instead of blocking alert() pop-ups.
+        const notifyError = (message) => PostCraftUI.toast(message, 'error');
+        const notifySuccess = (message) => PostCraftUI.toast(message, 'success');
+
         function getLinkedInStartUrl(next, force) {
             return `/auth/linkedin/start?next=${encodeURIComponent(next || 'publisher')}${force ? '&force=1' : ''}`;
         }
@@ -619,6 +1663,7 @@
         const endDateInput = document.getElementById('endDate');
 
         const oauthBanner = document.getElementById('oauthBanner');
+        const authTitle = document.getElementById('authTitle');
         const authStatus = document.getElementById('authStatus');
         const authSessionLabel = document.getElementById('authSessionLabel');
         const authBackToLogin = document.getElementById('authBackToLogin');
@@ -646,13 +1691,23 @@
         startDateInput.value = today.toISOString().split('T')[0];
         endDateInput.value = defaultEndDate.toISOString().split('T')[0];
 
+        // Preferred time: the server expects an hour 0-23; show each one as
+        // a clock time in the visitor's own format (10:00 AM / 10:00).
+        // Midnight (0) is left out: the server treats 0 as "not set" and
+        // falls back to 10, so offering it would silently schedule 10:00.
+        const preferredHourSelect = document.getElementById('preferredHour');
+        for (let hour = 1; hour < 24; hour += 1) {
+            const label = new Date(2000, 0, 1, hour).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+            preferredHourSelect.add(new Option(label, String(hour), hour === 10, hour === 10));
+        }
+
         function updateLinkedInLoginHref() {
             linkedinLoginBtn.href = apiEndpoints.linkedInLogin;
         }
 
         function setAuthStatus(message, isError = false) {
             authStatus.textContent = message;
-            authStatus.style.color = isError ? '#fecaca' : 'rgba(208, 223, 255, 0.92)';
+            authStatus.classList.toggle('is-error', Boolean(isError));
         }
 
         function setProtectedUiEnabled(isEnabled) {
@@ -663,8 +1718,7 @@
                 element.disabled = !isEnabled;
             });
 
-            linkedinLoginBtn.style.pointerEvents = isEnabled ? 'auto' : 'none';
-            linkedinLoginBtn.style.opacity = isEnabled ? '1' : '0.55';
+            linkedinLoginBtn.classList.toggle('is-disabled', !isEnabled);
         }
 
         function setSessionState(signedIn, email = '') {
@@ -679,6 +1733,7 @@
                 localStorage.setItem('postcraftUserName', email.split('@')[0]);
             }
 
+            authTitle.textContent = isSignedIn ? 'Signed In' : 'Session Required';
             authSessionLabel.textContent = email
                 ? `Signed in as ${email}`
                 : 'No active session.';
@@ -780,9 +1835,9 @@
                     return;
                 }
 
+                telegramStatus.classList.toggle('is-ok', Boolean(result.linked));
                 if (result.linked) {
-                    telegramStatus.textContent = '✅ Telegram is linked. Scheduled posts will be sent here for confirmation.';
-                    telegramStatus.style.color = '#86efac';
+                    telegramStatus.textContent = 'Telegram is linked. Scheduled posts will be sent there for confirmation.';
                     telegramLinkBtn.style.display = 'none';
                     telegramUnlinkBtn.style.display = 'inline-block';
                 } else {
@@ -824,17 +1879,14 @@
         }
 
         function updateLinkedInConnectionCard(account) {
-            linkedinOAuthStatus.textContent = `✅ Connected as ${account.displayName}${account.email ? ' (' + account.email + ')' : ''}`;
-            linkedinOAuthStatus.style.color = '#86efac';
+            linkedinOAuthStatus.textContent = `Connected as ${account.displayName}${account.email ? ' (' + account.email + ')' : ''}`;
+            linkedinOAuthStatus.classList.add('is-ok');
 
             const loginBtn = document.getElementById('linkedinLoginBtn');
             if (loginBtn) {
-                loginBtn.textContent = 'Reconnect LinkedIn';
+                loginBtn.textContent = 'Reconnect';
                 loginBtn.href = getLinkedInStartUrl('publisher', true);
-                loginBtn.style.background = 'rgba(34,197,94,0.15)';
-                loginBtn.style.border = '1px solid rgba(34,197,94,0.4)';
-                loginBtn.style.color = '#86efac';
-                loginBtn.style.fontSize = '0.92rem';
+                loginBtn.classList.add('is-connected');
             }
         }
 
@@ -862,7 +1914,7 @@
             }
 
             setSessionState(true, user.email || user.displayName || 'LinkedIn User');
-            setAuthStatus('Signed in. Your publishing data is loaded below.');
+            setAuthStatus('Your schedules and queue are loaded.');
         }
 
         async function signOut() {
@@ -875,7 +1927,8 @@
             currentQueue = [];
             document.getElementById('accountsList').innerHTML = '<div class="meta">Sign in to view accounts.</div>';
             document.getElementById('schedulesList').innerHTML = '<div class="meta">Sign in to view schedules.</div>';
-            document.getElementById('queueList').innerHTML = '<div class="meta">Sign in to view queue items.</div>';
+            closeQueueDay();
+            renderQueue([]);
             setAuthStatus('Signed out.');
             setTimeout(() => { window.location.href = '/auth.html'; }, 800);
         }
@@ -890,7 +1943,7 @@
             }
 
             if (linkedInStatus === 'connected') {
-                showOAuthBanner('LinkedIn account connected successfully. The user can use it for scheduling now.');
+                showOAuthBanner('LinkedIn account connected. You can now schedule posts to it.');
                 setTimeout(() => refreshOverview(), 100);
             } else {
                 showOAuthBanner(message || 'LinkedIn login did not complete successfully.', true);
@@ -918,39 +1971,59 @@
                 .replace(/'/g, '&#39;');
         }
 
+        // What a queue item is about: its news category or custom topic.
         function formatQueueType(item) {
             if (item.metadata?.holiday) {
                 return item.metadata.holiday;
             }
 
-            const rawType = item.metadata?.postType || item.metadata?.type || 'scheduled';
-            return rawType.replace(/_/g, ' ');
+            const rawType = item.metadata?.category || item.metadata?.postType || item.metadata?.type || 'scheduled';
+            return String(rawType).replace(/_/g, ' ');
         }
 
         function countHashtags(content) {
             return (String(content || '').match(/#\w+/g) || []).length;
         }
 
-        function calculateEngagementScore(content, item) {
-            let score = 72;
-            const text = String(content || '');
+        // A post that has no text of its own yet: its owner will be offered
+        // the day's stories on Telegram when it comes due.
+        function isAwaitingStoryChoice(item) {
+            const content = String(item.content || '').trim();
+            return !content ||
+                item.metadata?.contentStatus === 'pending_verification' ||
+                content.includes('Scheduled news post');
+        }
 
-            if (item.metadata?.holiday) score += 14;
-            if (text.length >= 90 && text.length <= 320) score += 12;
-            else if (text.length > 500) score -= 8;
+        // "2h ago" / "3d ago" for a story's publish time, or '' if unknown.
+        function describeStoryAge(publishedAt) {
+            const time = new Date(publishedAt || '').getTime();
+            if (Number.isNaN(time)) return '';
+            const hours = (Date.now() - time) / 3600000;
+            if (hours < 1) return 'just now';
+            if (hours < 24) return `${Math.round(hours)}h ago`;
+            return `${Math.round(hours / 24)}d ago`;
+        }
 
-            const hashtagCount = countHashtags(text);
-            score += Math.min(hashtagCount * 3, 15);
+        // Same cleaning the server applies to a custom topic.
+        function normalizeTopic(value) {
+            return String(value || '').toLowerCase().replace(/[^a-z0-9 &+.\-]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 40);
+        }
 
-            if (/[?]/.test(text)) score += 4;
-            if (/[!]/.test(text)) score += 3;
-
-            const ctaWords = ['comment', 'share', 'learn', 'discover', 'connect', 'visit'];
-            if (ctaWords.some((word) => text.toLowerCase().includes(word))) {
-                score += 8;
+        // Destructive buttons ask once more instead of acting on one click.
+        function confirmOnSecondClick(button, question) {
+            if (button.dataset.armed === '1') {
+                return true;
             }
-
-            return Math.max(58, Math.min(score, 99));
+            const original = button.textContent;
+            button.dataset.armed = '1';
+            button.textContent = question;
+            setTimeout(() => {
+                if (button.isConnected) {
+                    button.dataset.armed = '';
+                    button.textContent = original;
+                }
+            }, 4000);
+            return false;
         }
 
         function renderAccounts(accounts) {
@@ -965,6 +2038,10 @@
                 updateLinkedInConnectionCard(connectedLinkedIn);
             }
 
+            // With a single account the LinkedIn row above already says
+            // everything; the full list is only worth showing for several.
+            document.getElementById('accountsCard').hidden = accounts.length <= 1;
+
             if (!accounts.length) {
                 container.innerHTML = '<div class="meta">No connected accounts yet. Click "Connect with LinkedIn" above to get started.</div>';
                 accountIdSelect.innerHTML = '<option value="">Add an account first</option>';
@@ -975,11 +2052,11 @@
 
             container.innerHTML = accounts.map((account) => `
                 <article class="list-item">
-                    <span class="pill">${account.platform}</span>
-                    <h3>${account.displayName}</h3>
+                    <span class="pill">${escapeHtml(account.platform)}</span>
+                    <h3>${escapeHtml(account.displayName)}</h3>
                     <div class="meta">
-                        ${account.email ? `Email: ${account.email}<br>` : ''}
-                        Status: ${account.status}${account.authType ? ` (${account.authType})` : ''}<br>
+                        ${account.email ? `Email: ${escapeHtml(account.email)}<br>` : ''}
+                        Status: ${escapeHtml(account.status)}${account.authType ? ` (${escapeHtml(account.authType)})` : ''}<br>
                         Saved: ${new Date(account.createdAt).toLocaleString()}
                     </div>
                 </article>
@@ -996,50 +2073,75 @@
             }
 
             accountIdSelect.innerHTML = matchingAccounts.map((account) => `
-                <option value="${account.id}">${account.displayName} (${account.platform})</option>
+                <option value="${escapeHtml(account.id)}">${escapeHtml(account.displayName)} (${escapeHtml(account.platform)})</option>
             `).join('');
         }
 
         function renderSchedules(schedules) {
             const container = document.getElementById('schedulesList');
             if (!schedules.length) {
-                container.innerHTML = '<div class="meta">No schedules yet.</div>';
+                container.innerHTML = '<div class="meta">No schedules yet. Use "New schedule" to create one.</div>';
                 return;
             }
 
-            container.innerHTML = schedules.map((schedule) => `
+            container.innerHTML = schedules.map((schedule) => {
+                const hour = Number(schedule.preferredHour) || 0;
+                const topics = (Array.isArray(schedule.categories) ? schedule.categories : []).join(', ');
+                const postCount = currentQueue.filter((item) => item.scheduleId === schedule.id).length;
+                return `
                 <article class="list-item">
-                    <span class="pill scheduled">${schedule.platform}</span>
-                    <h3>${schedule.companyName}</h3>
+                    <div class="list-item-head">
+                        <h3>${escapeHtml(schedule.companyName || 'Weekly schedule')}</h3>
+                        <button type="button" class="queue-btn danger" onclick="deleteSchedule('${schedule.id}', this)">Delete</button>
+                    </div>
                     <div class="meta">
-                        ${schedule.postsPerWeek} posts/week<br>
-                        Preferred hour: ${schedule.preferredHour}:00<br>
-                        Start: ${new Date(schedule.startDate).toLocaleDateString()}<br>
-                        End: ${schedule.endDate ? new Date(schedule.endDate).toLocaleDateString() : 'Open-ended'}
+                        ${Number(schedule.postsPerWeek) || 0} posts/week · ${postCount} on the calendar<br>
+                        ${topics ? `Topics: <span class="topic-list">${escapeHtml(topics)}</span><br>` : ''}
+                        ${new Date(schedule.startDate).toLocaleDateString()} to ${schedule.endDate ? new Date(schedule.endDate).toLocaleDateString() : 'open-ended'}
                     </div>
                 </article>
-            `).join('');
+            `;
+            }).join('');
         }
 
+        // Maps a queue item's status onto one of the four calendar colours.
+        function queueStatusClass(status) {
+            if (status === 'failed') return 'st-failed';
+            if (status === 'published') return 'st-published';
+            if (status === 'pending_confirmation' || status === 'publishing') return 'st-pending';
+            return 'st-scheduled';
+        }
+
+        function formatQueueTime(date) {
+            return date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+        }
+
+        // Local-time YYYY-MM-DD key, so a post lands on the day the user
+        // sees on their own clock rather than the UTC day.
+        function toDayKey(date) {
+            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        }
+
+        function queueItemDayKey(item) {
+            const date = new Date(item.scheduledFor);
+            return Number.isNaN(date.getTime()) ? '' : toDayKey(date);
+        }
+
+        // Full post card shown inside the day pop-up.
         function renderQueueItemCard(item) {
             const scheduledDate = new Date(item.scheduledFor);
-            const shortDate = scheduledDate.toLocaleDateString();
-            const fullDate = scheduledDate.toLocaleDateString(undefined, {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                weekday: 'long'
-            });
             const type = formatQueueType(item);
-            const rawContent = String(item.content || 'Content will be generated automatically when this scheduled item is published.');
-            const preview = rawContent.length > 340 ? `${rawContent.slice(0, 340)}...` : rawContent;
-            const escapedPreview = escapeHtml(preview).replace(/\n/g, '<br>');
-            const hashtagCount = countHashtags(rawContent);
-            const engagementScore = calculateEngagementScore(rawContent, item);
+            const awaitingChoice = isAwaitingStoryChoice(item);
+            const hasContent = !awaitingChoice;
+            const rawContent = hasContent
+                ? String(item.content)
+                : 'No text yet. When this post is due you will get up to three fresh stories on Telegram to choose from. To write it yourself instead, use Edit.';
+            const escapedPreview = escapeHtml(rawContent).replace(/\n/g, '<br>');
             const isPublished = item.status === 'published';
             const isPublishing = item.status === 'publishing';
             const isPendingConfirmation = item.status === 'pending_confirmation';
-            const statusClass = item.status === 'failed' ? 'failed' : (item.status === 'scheduled' || isPendingConfirmation) ? 'scheduled' : '';
+            const statusClass = queueStatusClass(item.status);
+            const wasEdited = ['edited', 'manually_edited'].includes(item.metadata?.contentStatus);
             const statusLine = item.error
                 ? `Error: ${escapeHtml(item.error)}`
                 : isPublished
@@ -1047,59 +2149,352 @@
                     : isPublishing
                         ? 'Publishing now...'
                         : isPendingConfirmation
-                            ? 'Sent to Telegram \u2014 waiting for you to pick one of the 3 options.'
-                            : item.metadata?.contentStatus === 'edited'
-                                ? 'Edited manually. Ready for publish.'
-                                : 'Ready for publish.';
+                            ? 'Sent to Telegram — waiting for you to pick one of the options.'
+                            : awaitingChoice
+                                ? 'Waiting for its day. Publish Now sends the Telegram options right away.'
+                                : wasEdited
+                                    ? 'Written by you. Will be published as it is.'
+                                    : 'Ready to publish.';
 
-            return `
-                <article class="queue-card">
-                    <div class="queue-card-top">
-                        <div class="queue-date">${shortDate}</div>
-                        <div class="actions">
-                            <span class="pill ${statusClass}">${escapeHtml(item.status)}</span>
-                            <span class="queue-type">${escapeHtml(type)}</span>
-                        </div>
-                    </div>
-                    <div class="queue-copy">
-                        📅 ${escapeHtml(fullDate)} - <strong>${escapeHtml(type.toUpperCase())}</strong> ${escapedPreview}
-                    </div>
-                    <div class="queue-metrics">
+            // The story the post is based on, with how old it is.
+            const storyLink = /^https?:\/\//i.test(String(item.metadata?.articleLink || '')) ? escapeHtml(item.metadata.articleLink) : '';
+            const storyAge = describeStoryAge(item.metadata?.articlePublishedAt);
+            const story = item.metadata?.articleTitle
+                ? `<div class="queue-source">
+                        <span class="ico ico-news" aria-hidden="true"></span>
+                        ${storyLink ? `<a href="${storyLink}" target="_blank" rel="noopener">${escapeHtml(item.metadata.articleTitle)}</a>` : escapeHtml(item.metadata.articleTitle)}
+                        ${storyAge ? ` · published ${escapeHtml(storyAge)}` : ''}
+                   </div>`
+                : '';
+
+            const metrics = hasContent
+                ? `<div class="queue-metrics">
                         <div>
                             <div class="metric-label">Length</div>
                             <div class="metric-value">${rawContent.length} chars</div>
                         </div>
                         <div>
                             <div class="metric-label">Hashtags</div>
-                            <div class="metric-value">${hashtagCount}</div>
+                            <div class="metric-value">${countHashtags(rawContent)}</div>
                         </div>
-                        <div>
-                            <div class="metric-label">Engagement Score</div>
-                            <div class="metric-value">${engagementScore}%</div>
+                   </div>`
+                : '';
+
+            return `
+                <article class="queue-card">
+                    <div class="queue-card-top">
+                        <div class="queue-date"><span class="ico ico-clock" aria-hidden="true"></span> ${escapeHtml(formatQueueTime(scheduledDate))}</div>
+                        <div class="actions">
+                            <span class="pill ${statusClass}">${escapeHtml(String(item.status || '').replace(/_/g, ' '))}</span>
+                            <span class="queue-type">${escapeHtml(type)}</span>
                         </div>
                     </div>
-                    <div class="queue-status-line">${statusLine}</div>
+                    ${story}
+                    <div class="queue-copy${hasContent ? '' : ' placeholder'}">
+                        ${escapedPreview}
+                    </div>
+                    ${metrics}
+                    <div class="queue-status-line${item.error ? ' error' : ''}">${statusLine}</div>
                     <div class="queue-actions">
-                        <button class="queue-btn" type="button" onclick="copyQueueItem('${item.id}')">Copy</button>
-                        <button class="queue-btn" type="button" onclick="openQueueEditor('${item.id}')">Edit</button>
-                        <button class="queue-btn primary" type="button" onclick="publishNow('${item.id}')" ${isPublished || isPublishing || isPendingConfirmation ? 'disabled' : ''}>
-                            ${isPublished ? 'Published' : isPublishing ? 'Publishing...' : isPendingConfirmation ? 'Awaiting Telegram' : 'Publish Now'}
+                        <button class="queue-btn danger" type="button" onclick="deleteQueueItem('${item.id}', this)" ${isPublishing ? 'disabled' : ''}>Delete</button>
+                        <button class="queue-btn" type="button" onclick="copyQueueItem('${item.id}', this)" ${hasContent ? '' : 'disabled'}>Copy</button>
+                        <button class="queue-btn" type="button" onclick="openQueueEditor('${item.id}')" ${isPublished || isPublishing ? 'disabled' : ''}>${hasContent ? 'Edit' : 'Edit / move'}</button>
+                        <button class="queue-btn primary" type="button" onclick="publishNow('${item.id}', this)" ${isPublished || isPublishing || isPendingConfirmation ? 'disabled' : ''}>
+                            ${isPublished ? 'Published' : isPublishing ? 'Publishing...' : isPendingConfirmation ? 'Awaiting Telegram' : item.status === 'failed' ? 'Try again' : 'Publish Now'}
                         </button>
                     </div>
                 </article>
             `;
         }
 
-        function renderQueue(queue) {
-            const container = document.getElementById('queueList');
-            currentQueue = [...queue].sort((a, b) => new Date(a.scheduledFor) - new Date(b.scheduledFor));
-            if (!queue.length) {
-                container.innerHTML = '<div class="meta">No queue items yet.</div>';
+        // ---- Publishing Queue calendar -------------------------------------
+        const calMonthLabel = document.getElementById('calMonthLabel');
+        const calSummary = document.getElementById('calSummary');
+        const queueDayModal = document.getElementById('queueDayModal');
+        const queueDayTitle = document.getElementById('queueDayTitle');
+        const queueDayList = document.getElementById('queueDayList');
+        const MAX_CHIPS_PER_DAY = 3;
+
+        let calendarMonth = null;          // first day of the month on screen
+        let calendarMonthPinned = false;   // true once the user picks a month
+        let openDayKey = '';               // day whose pop-up is open, if any
+
+        // Opens on the current month when it has posts, otherwise on the
+        // month of the next upcoming post, otherwise on the latest one.
+        function pickCalendarMonth(queue) {
+            const now = new Date();
+            const dates = queue
+                .map((item) => new Date(item.scheduledFor))
+                .filter((date) => !Number.isNaN(date.getTime()));
+            const inCurrentMonth = dates.some(
+                (date) => date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth()
+            );
+
+            let anchor = now;
+            if (!inCurrentMonth && dates.length) {
+                const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                const upcoming = dates.filter((date) => date >= startOfToday).sort((a, b) => a - b)[0];
+                anchor = upcoming || dates.sort((a, b) => b - a)[0];
+            }
+            return new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+        }
+
+        const STATUS_LABELS = {
+            'st-scheduled': 'Scheduled',
+            'st-pending': 'Awaiting Telegram',
+            'st-published': 'Published',
+            'st-failed': 'Failed'
+        };
+        let queueLoaded = false;   // false until the first overview arrives
+        let statusFilter = '';     // one of the STATUS_LABELS keys, or '' for all
+
+        // Line under the status tiles. Returns HTML built only from fixed
+        // strings and numbers (no user content).
+        function describeMonth(items) {
+            if (!isSignedIn) {
+                return 'Sign in to view your publishing queue.';
+            }
+            if (!queueLoaded) {
+                return 'Loading your queue…';
+            }
+            if (!currentQueue.length) {
+                return 'No posts scheduled yet. <a href="#" onclick="openScheduleModal(); return false;">Create a weekly schedule</a> to fill the calendar.';
+            }
+            if (!items.length) {
+                return 'No posts scheduled this month.';
+            }
+
+            const total = `${items.length} post${items.length === 1 ? '' : 's'} this month`;
+            if (statusFilter) {
+                const shown = items.filter((item) => queueStatusClass(item.status) === statusFilter).length;
+                return `Showing ${shown} of ${total} (${STATUS_LABELS[statusFilter].toLowerCase()}). <a href="#" onclick="toggleStatusFilter(''); return false;">Show all</a>`;
+            }
+            return `${total}. Select a day to view, edit or publish its posts.`;
+        }
+
+        // Month totals by status. The tiles use the same colours as the
+        // calendar chips, so they act as the legend, and clicking one
+        // highlights just that status on the calendar.
+        function renderMonthStats(items) {
+            const counts = { 'st-scheduled': 0, 'st-pending': 0, 'st-published': 0, 'st-failed': 0 };
+            items.forEach((item) => { counts[queueStatusClass(item.status)] += 1; });
+            document.getElementById('calStats').innerHTML = Object.keys(STATUS_LABELS).map((key) => `
+                <button type="button" class="cal-stat ${key}${counts[key] ? '' : ' is-zero'}"
+                        aria-pressed="${statusFilter === key}" onclick="toggleStatusFilter('${key}')"
+                        title="Highlight ${STATUS_LABELS[key].toLowerCase()} posts on the calendar">
+                    <span class="cal-stat-num">${counts[key]}</span>
+                    <span class="cal-stat-label">${STATUS_LABELS[key]}</span>
+                </button>
+            `).join('');
+        }
+
+        function toggleStatusFilter(key) {
+            statusFilter = statusFilter === key ? '' : key;
+            renderQueueCalendar();
+        }
+
+        // The next few posts that have not gone out yet, as shortcuts into
+        // the calendar.
+        function renderUpNext() {
+            const container = document.getElementById('upNextList');
+            if (!isSignedIn) {
+                container.innerHTML = '<div class="meta">Sign in to see your upcoming posts.</div>';
                 return;
             }
 
-            const sorted = currentQueue;
-            container.innerHTML = sorted.slice(0, 12).map(renderQueueItemCard).join('');
+            const now = Date.now();
+            const upcoming = currentQueue.filter((item) => {
+                const time = new Date(item.scheduledFor).getTime();
+                return !Number.isNaN(time) && time >= now && item.status !== 'published';
+            }).slice(0, 3);
+
+            if (!upcoming.length) {
+                container.innerHTML = '<div class="meta">Nothing coming up. Create a weekly schedule to fill the calendar.</div>';
+                return;
+            }
+
+            container.innerHTML = upcoming.map((item) => {
+                const date = new Date(item.scheduledFor);
+                const weekday = date.toLocaleDateString(undefined, { weekday: 'long' });
+                return `
+                    <button type="button" class="upnext-item" onclick="openQueueDay('${toDayKey(date)}')">
+                        <span class="upnext-date">
+                            <small>${escapeHtml(date.toLocaleDateString(undefined, { month: 'short' }))}</small>
+                            <b>${date.getDate()}</b>
+                        </span>
+                        <span class="upnext-body">
+                            <span class="upnext-type">${escapeHtml(formatQueueType(item))}</span>
+                            <span class="upnext-time">${escapeHtml(weekday)} · ${escapeHtml(formatQueueTime(date))}</span>
+                        </span>
+                        <span class="pill ${queueStatusClass(item.status)}">${escapeHtml(String(item.status || '').replace(/_/g, ' '))}</span>
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function renderQueueCalendar() {
+            const container = document.getElementById('queueList');
+            const year = calendarMonth.getFullYear();
+            const month = calendarMonth.getMonth();
+            const todayKey = toDayKey(new Date());
+
+            const itemsByDay = {};
+            currentQueue.forEach((item) => {
+                const key = queueItemDayKey(item);
+                if (!key) return;
+                if (!itemsByDay[key]) itemsByDay[key] = [];
+                itemsByDay[key].push(item);
+            });
+
+            calMonthLabel.textContent = calendarMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+            const monthItems = currentQueue.filter((item) => {
+                const date = new Date(item.scheduledFor);
+                return date.getFullYear() === year && date.getMonth() === month;
+            });
+            calSummary.innerHTML = describeMonth(monthItems);
+            container.classList.toggle('is-filtered', Boolean(statusFilter));
+            renderMonthStats(monthItems);
+
+            const firstWeekday = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const cellCount = Math.ceil((firstWeekday + daysInMonth) / 7) * 7;
+
+            const cells = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(
+                (name) => `<div class="cal-weekday">${name}</div>`
+            );
+
+            for (let index = 0; index < cellCount; index += 1) {
+                const date = new Date(year, month, index - firstWeekday + 1);
+                const key = toDayKey(date);
+                const items = itemsByDay[key] || [];
+                const classes = ['cal-day'];
+                if (date.getMonth() !== month) classes.push('outside');
+                if (key === todayKey) classes.push('today');
+                if (statusFilter && items.some((item) => queueStatusClass(item.status) === statusFilter)) {
+                    classes.push('has-match');
+                }
+
+                const chips = items.slice(0, MAX_CHIPS_PER_DAY).map((item) => {
+                    const status = queueStatusClass(item.status);
+                    const time = formatQueueTime(new Date(item.scheduledFor));
+                    return `
+                    <span class="cal-chip ${status}${status === statusFilter ? ' is-match' : ''}" title="${escapeHtml(time)} · ${escapeHtml(STATUS_LABELS[status])}">
+                        <span class="cal-chip-type">${escapeHtml(formatQueueType(item))}</span>
+                    </span>
+                `;
+                }).join('');
+                const more = items.length > MAX_CHIPS_PER_DAY
+                    ? `<span class="cal-more">+${items.length - MAX_CHIPS_PER_DAY} more</span>`
+                    : '';
+                const dayNumber = `<span class="cal-day-num">${date.getDate()}</span>`;
+
+                if (items.length) {
+                    const label = `${date.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}, ${items.length} post${items.length === 1 ? '' : 's'}`;
+                    cells.push(`<button type="button" class="${classes.join(' ')}" onclick="openQueueDay('${key}')" aria-label="${escapeHtml(label)}">${dayNumber}${chips}${more}</button>`);
+                } else {
+                    cells.push(`<div class="${classes.join(' ')}">${dayNumber}</div>`);
+                }
+            }
+
+            container.innerHTML = cells.join('');
+        }
+
+        function renderQueueDay() {
+            if (!openDayKey) {
+                return;
+            }
+
+            const items = currentQueue.filter((item) => queueItemDayKey(item) === openDayKey);
+            if (!items.length) {
+                closeQueueDay();
+                return;
+            }
+
+            const [year, month, day] = openDayKey.split('-').map(Number);
+            queueDayTitle.textContent = new Date(year, month - 1, day).toLocaleDateString(undefined, {
+                weekday: 'long',
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric'
+            });
+            queueDayList.innerHTML = items.map(renderQueueItemCard).join('');
+
+            const days = daysWithPosts();
+            const position = days.indexOf(openDayKey);
+            document.getElementById('queueDayPrev').disabled = position <= 0;
+            document.getElementById('queueDayNext').disabled = position === -1 || position >= days.length - 1;
+        }
+
+        // Every day that has at least one post, oldest first.
+        function daysWithPosts() {
+            return [...new Set(currentQueue.map(queueItemDayKey).filter(Boolean))].sort();
+        }
+
+        // Moves the pop-up to the previous (-1) or next (+1) day with posts.
+        function stepQueueDay(direction) {
+            const days = daysWithPosts();
+            const target = days[days.indexOf(openDayKey) + direction];
+            if (target) {
+                openQueueDay(target);
+            }
+        }
+
+        // ---- New schedule pop-up --------------------------------------------
+        const scheduleModal = document.getElementById('scheduleModal');
+
+        function openScheduleModal() {
+            if (!isSignedIn) {
+                notifyError('Sign in before creating a schedule.');
+                return;
+            }
+            scheduleModal.style.display = 'flex';
+            accountIdSelect.focus();
+        }
+
+        function closeScheduleModal() {
+            scheduleModal.style.display = 'none';
+        }
+
+        function openQueueDay(key) {
+            // Coming from "Up next", the day may be in another month: bring
+            // the calendar along so it matches the pop-up.
+            const [year, month] = key.split('-').map(Number);
+            if (calendarMonth.getFullYear() !== year || calendarMonth.getMonth() !== month - 1) {
+                showCalendarMonth(new Date(year, month - 1, 1));
+            }
+
+            openDayKey = key;
+            renderQueueDay();
+            if (openDayKey) {
+                const wasOpen = queueDayModal.style.display === 'flex';
+                queueDayModal.style.display = 'flex';
+                queueDayModal.querySelector('.modal-card').scrollTop = 0;
+                // Keep focus where it is when stepping between days.
+                if (!wasOpen) {
+                    document.getElementById('queueDayClose').focus();
+                }
+            }
+        }
+
+        function closeQueueDay() {
+            openDayKey = '';
+            queueDayModal.style.display = 'none';
+        }
+
+        function showCalendarMonth(date) {
+            calendarMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+            calendarMonthPinned = true;
+            renderQueueCalendar();
+        }
+
+        function renderQueue(queue) {
+            currentQueue = [...queue].sort((a, b) => new Date(a.scheduledFor) - new Date(b.scheduledFor));
+            if (!calendarMonth || !calendarMonthPinned) {
+                calendarMonth = pickCalendarMonth(currentQueue);
+            }
+            renderQueueCalendar();
+            renderUpNext();
+            renderQueueDay();
         }
 
         async function refreshOverview() {
@@ -1111,9 +2506,10 @@
             }
 
             const overview = await fetchOverview();
+            queueLoaded = true;
             renderAccounts(overview.accounts || []);
-            renderSchedules(overview.schedules || []);
             renderQueue(overview.queue || []);
+            renderSchedules(overview.schedules || []);
         }
 
         let schedPatternMode = 'rotation';
@@ -1126,43 +2522,26 @@
             const rotDiv = document.getElementById('schedRotationContainer');
             const blkDiv = document.getElementById('schedBlockContainer');
 
-            if (mode === 'rotation') {
-                rotBtn.style.background = 'rgba(6,182,212,0.25)';
-                rotBtn.style.borderColor = '#06b6d4';
-                rotBtn.style.color = '#67e8f9';
-                rotBtn.style.opacity = '1';
-                blkBtn.style.background = 'rgba(255,255,255,0.12)';
-                blkBtn.style.borderColor = 'rgba(255,255,255,0.14)';
-                blkBtn.style.opacity = '0.6';
-                rotDiv.style.display = 'block';
-                blkDiv.style.display = 'none';
-            } else {
-                blkBtn.style.background = 'rgba(6,182,212,0.25)';
-                blkBtn.style.borderColor = '#06b6d4';
-                blkBtn.style.color = '#67e8f9';
-                blkBtn.style.opacity = '1';
-                rotBtn.style.background = 'rgba(255,255,255,0.12)';
-                rotBtn.style.borderColor = 'rgba(255,255,255,0.14)';
-                rotBtn.style.opacity = '0.6';
-                rotDiv.style.display = 'none';
-                blkDiv.style.display = 'block';
-            }
+            const isRotation = mode === 'rotation';
+            rotBtn.classList.toggle('is-active', isRotation);
+            blkBtn.classList.toggle('is-active', !isRotation);
+            rotDiv.style.display = isRotation ? 'block' : 'none';
+            blkDiv.style.display = isRotation ? 'none' : 'block';
         }
 
         function renderSchedCategoryChips() {
             const container = document.getElementById('schedCategoryChips');
             if (!container) return;
             container.innerHTML = '';
-            const categoryLabels = { tech: 'Tech', science: 'Science', dental: 'Dental' };
 
             schedCategorySequence.forEach((cat, index) => {
                 const chip = document.createElement('div');
-                chip.style.cssText = 'display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.8rem; background: rgba(59,130,246,0.25); border: 1px solid rgba(59,130,246,0.4); border-radius: 999px; font-size: 0.85rem; color: #93c5fd;';
+                chip.className = 'sched-chip';
                 chip.innerHTML = `
-                    <span>Day ${index + 1}: ${categoryLabels[cat] || cat}</span>
-                    <button type="button" onclick="moveSchedCategory(${index}, -1)" style="background:none; border:none; color:#fff; cursor:pointer; padding:0 2px;">↑</button>
-                    <button type="button" onclick="moveSchedCategory(${index}, 1)" style="background:none; border:none; color:#fff; cursor:pointer; padding:0 2px;">↓</button>
-                    <button type="button" onclick="removeSchedCategory(${index})" style="background:none; border:none; color:#fca5a5; cursor:pointer; padding:0 2px;">✕</button>
+                    <span class="topic-list">Day ${index + 1}: ${escapeHtml(cat)}</span>
+                    <button type="button" onclick="moveSchedCategory(${index}, -1)" aria-label="Move earlier">↑</button>
+                    <button type="button" onclick="moveSchedCategory(${index}, 1)" aria-label="Move later">↓</button>
+                    <button type="button" class="remove" onclick="removeSchedCategory(${index})" aria-label="Remove">✕</button>
                 `;
                 container.appendChild(chip);
             });
@@ -1171,6 +2550,17 @@
         function addSchedCategory(cat) {
             schedCategorySequence.push(cat);
             renderSchedCategoryChips();
+        }
+
+        function addSchedCustomTopic() {
+            const input = document.getElementById('schedCustomTopic');
+            const topic = normalizeTopic(input.value);
+            if (topic.length < 2) {
+                notifyError('Type a topic first, for example "electric vehicles".');
+                return;
+            }
+            input.value = '';
+            addSchedCategory(topic);
         }
 
         function removeSchedCategory(index) {
@@ -1193,45 +2583,81 @@
             const data = Object.fromEntries(new FormData(scheduleForm).entries());
 
             data.mode = schedPatternMode;
-            data.categories = schedPatternMode === 'rotation'
-                ? schedCategorySequence
-                : [document.getElementById('schedSingleCategory').value];
+            if (schedPatternMode === 'rotation') {
+                data.categories = schedCategorySequence;
+            } else {
+                const selected = document.getElementById('schedSingleCategory').value;
+                const topic = selected === '__custom'
+                    ? normalizeTopic(document.getElementById('schedBlockCustomTopic').value)
+                    : selected;
+                if (topic.length < 2) {
+                    notifyError('Type your own topic, or pick one of the built-in categories.');
+                    return;
+                }
+                data.categories = [topic];
+            }
+
+            // The dates and the preferred time are on this person's clock.
+            data.timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
 
             if (data.startDate && data.endDate && new Date(data.endDate) < new Date(data.startDate)) {
-                alert('End date must be on or after the start date.');
+                notifyError('End date must be on or after the start date.');
                 return;
             }
 
-            try {
-                const response = await authFetch(apiEndpoints.publishingSchedules, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                const result = await readJsonResponse(response);
-                if (!result.success) {
-                    alert(result.details || result.error || 'Failed to create schedule');
-                    return;
-                }
-                await refreshOverview();
-            } catch (error) {
-                alert(error.message || 'Failed to create schedule');
+            if (!data.accountId) {
+                notifyError('Connect a LinkedIn account before creating a schedule.');
+                return;
             }
+
+            // Generating a queue can take a while, so show progress on the
+            // button and block a second submit.
+            await PostCraftUI.withBusy(document.getElementById('scheduleSubmit'), 'Creating schedule…', async () => {
+                try {
+                    const response = await authFetch(apiEndpoints.publishingSchedules, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                    const result = await readJsonResponse(response);
+                    if (!result.success) {
+                        notifyError(result.details || result.error || 'Failed to create schedule');
+                        return;
+                    }
+                    await refreshOverview();
+                    closeScheduleModal();
+                    notifySuccess('Schedule created. The calendar is updated.');
+                } catch (error) {
+                    notifyError(error.message || 'Failed to create schedule');
+                }
+            });
         });
 
-        async function publishNow(queueItemId) {
-            try {
-                const response = await authFetch(apiEndpoints.publishQueueItem(queueItemId), {
-                    method: 'POST'
-                });
-                const result = await readJsonResponse(response);
-                if (!result.success && result.item?.status !== 'published') {
-                    alert(result.details || result.error || result.item?.error || 'Failed to publish item');
+        async function publishNow(queueItemId, button) {
+            await PostCraftUI.withBusy(button, 'Publishing…', async () => {
+                try {
+                    const response = await authFetch(apiEndpoints.publishQueueItem(queueItemId), {
+                        method: 'POST'
+                    });
+                    const result = await readJsonResponse(response);
+                    if (!result.success && result.item?.status !== 'published') {
+                        notifyError(result.details || result.error || result.item?.error || 'Failed to publish item');
+                    } else {
+                        notifySuccess('Post published to LinkedIn.');
+                    }
+                    await refreshOverview();
+                } catch (error) {
+                    notifyError(error.message || 'Failed to publish item');
                 }
-                await refreshOverview();
-            } catch (error) {
-                alert(error.message || 'Failed to publish item');
-            }
+            });
+        }
+
+        const queueEditorWhen = document.getElementById('queueEditorWhen');
+
+        // <input type="datetime-local"> value for a Date, in local time.
+        function toLocalInputValue(date) {
+            const pad = (value) => String(value).padStart(2, '0');
+            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
         }
 
         function closeQueueEditor() {
@@ -1244,65 +2670,127 @@
         function openQueueEditor(queueItemId) {
             const item = currentQueue.find((entry) => entry.id === queueItemId);
             if (!item) {
-                alert('Queue item not found.');
+                notifyError('Post not found.');
                 return;
             }
 
             editingQueueItemId = queueItemId;
-            queueEditorContent.value = item.content || '';
-            queueEditorMeta.textContent = `Editing ${new Date(item.scheduledFor).toLocaleString()} · ${formatQueueType(item)}`;
+            // A post still waiting for its Telegram choice has no text of
+            // its own: start with an empty box, not the placeholder line.
+            queueEditorContent.value = isAwaitingStoryChoice(item) ? '' : (item.content || '');
+            queueEditorWhen.value = toLocalInputValue(new Date(item.scheduledFor));
+            queueEditorMeta.textContent = `Topic: ${formatQueueType(item)}. Change the time to move this post to another day.`;
             queueEditorModal.style.display = 'flex';
             queueEditorContent.focus();
             queueEditorContent.setSelectionRange(queueEditorContent.value.length, queueEditorContent.value.length);
         }
 
         async function saveQueueEdit() {
+            const item = currentQueue.find((entry) => entry.id === editingQueueItemId);
+            if (!item) {
+                return;
+            }
+
             const nextContent = queueEditorContent.value.trim();
-            if (!editingQueueItemId) {
+            const hadOwnText = !isAwaitingStoryChoice(item);
+            const nextWhen = new Date(queueEditorWhen.value);
+            const body = {};
+
+            if (hadOwnText && !nextContent) {
+                notifyError('Post text cannot be empty.');
                 return;
             }
-
-            if (!nextContent) {
-                alert('Post content cannot be empty.');
+            if (nextContent && nextContent !== String(item.content || '').trim()) {
+                body.content = nextContent;
+            }
+            if (Number.isNaN(nextWhen.getTime())) {
+                notifyError('Choose a valid date and time.');
                 return;
             }
+            if (toLocalInputValue(nextWhen) !== toLocalInputValue(new Date(item.scheduledFor))) {
+                body.scheduledFor = nextWhen.toISOString();
+            }
 
-            queueEditorSave.disabled = true;
-            const originalLabel = queueEditorSave.textContent;
-            queueEditorSave.textContent = 'Saving...';
-
-            try {
-                const response = await authFetch(apiEndpoints.updateQueueItem(editingQueueItemId), {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ content: nextContent })
-                });
-                const result = await readJsonResponse(response);
-                if (!result.success) {
-                    throw new Error(result.details || result.error || 'Failed to save changes');
-                }
-
+            if (!Object.keys(body).length) {
                 closeQueueEditor();
-                showOAuthBanner('Queue post updated successfully.');
-                await refreshOverview();
-            } catch (error) {
-                alert(error.message || 'Failed to save changes');
-            } finally {
-                queueEditorSave.disabled = false;
-                queueEditorSave.textContent = originalLabel;
+                return;
             }
+
+            await PostCraftUI.withBusy(queueEditorSave, 'Saving…', async () => {
+                try {
+                    const response = await authFetch(apiEndpoints.updateQueueItem(editingQueueItemId), {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body)
+                    });
+                    const result = await readJsonResponse(response);
+                    if (!result.success) {
+                        throw new Error(result.details || result.error || 'Failed to save changes');
+                    }
+
+                    closeQueueEditor();
+                    // If the post moved to another day, follow it there.
+                    if (body.scheduledFor && openDayKey) {
+                        openDayKey = toDayKey(nextWhen);
+                    }
+                    await refreshOverview();
+                    notifySuccess(body.scheduledFor ? 'Post moved.' : 'Post updated.');
+                } catch (error) {
+                    notifyError(error.message || 'Failed to save changes');
+                }
+            });
         }
 
-        async function copyQueueItem(queueItemId) {
+        async function deleteQueueItem(queueItemId, button) {
+            if (!confirmOnSecondClick(button, 'Click again to delete')) {
+                return;
+            }
+
+            await PostCraftUI.withBusy(button, 'Deleting…', async () => {
+                try {
+                    const response = await authFetch(apiEndpoints.updateQueueItem(queueItemId), { method: 'DELETE' });
+                    const result = await readJsonResponse(response);
+                    if (!result.success) {
+                        throw new Error(result.details || result.error || 'Failed to delete the post');
+                    }
+                    await refreshOverview();
+                    notifySuccess('Post deleted.');
+                } catch (error) {
+                    notifyError(error.message || 'Failed to delete the post');
+                }
+            });
+        }
+
+        async function deleteSchedule(scheduleId, button) {
+            if (!confirmOnSecondClick(button, 'Delete schedule and its posts?')) {
+                return;
+            }
+
+            await PostCraftUI.withBusy(button, 'Deleting…', async () => {
+                try {
+                    const response = await authFetch(`${apiEndpoints.publishingSchedules}/${encodeURIComponent(scheduleId)}`, { method: 'DELETE' });
+                    const result = await readJsonResponse(response);
+                    if (!result.success) {
+                        throw new Error(result.details || result.error || 'Failed to delete the schedule');
+                    }
+                    await refreshOverview();
+                    notifySuccess(`Schedule deleted, with ${result.removedQueueItems || 0} posts.`);
+                } catch (error) {
+                    notifyError(error.message || 'Failed to delete the schedule');
+                }
+            });
+        }
+
+        async function copyQueueItem(queueItemId, button) {
             const item = currentQueue.find((entry) => entry.id === queueItemId);
             if (!item) {
-                alert('Queue item not found.');
+                notifyError('Queue item not found.');
                 return;
             }
 
             const text = String(item.content || '');
             if (!text.trim()) {
-                alert('There is no generated content to copy yet.');
+                notifyError('There is no generated content to copy yet.');
                 return;
             }
 
@@ -1321,15 +2809,39 @@
                     document.body.removeChild(helper);
                 }
 
-                showOAuthBanner('Queue post copied to clipboard.');
+                // Confirm on the button itself: the page banner sits behind
+                // the day pop-up, so the user would not see it there.
+                if (button) {
+                    button.textContent = 'Copied!';
+                    setTimeout(() => {
+                        if (button.isConnected) {
+                            button.textContent = 'Copy';
+                        }
+                    }, 1500);
+                } else {
+                    notifySuccess('Post copied to clipboard.');
+                }
             } catch (error) {
-                alert('Failed to copy the post content.');
+                notifyError('Failed to copy the post content.');
             }
         }
 
         window.publishNow = publishNow;
         window.openQueueEditor = openQueueEditor;
         window.copyQueueItem = copyQueueItem;
+        window.openQueueDay = openQueueDay;
+        window.deleteQueueItem = deleteQueueItem;
+        window.deleteSchedule = deleteSchedule;
+        document.getElementById('schedCustomTopicAdd').addEventListener('click', addSchedCustomTopic);
+        document.getElementById('schedCustomTopic').addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                addSchedCustomTopic();
+            }
+        });
+        document.getElementById('schedSingleCategory').addEventListener('change', (event) => {
+            document.getElementById('schedBlockCustomTopic').style.display = event.target.value === '__custom' ? 'block' : 'none';
+        });
         schedulePlatformSelect.addEventListener('change', updateAccountOptions);
         authSignOutBtn.addEventListener('click', async () => {
             authSignOutBtn.disabled = true;
@@ -1354,6 +2866,46 @@
         queueEditorModal.addEventListener('click', (event) => {
             if (event.target === queueEditorModal) {
                 closeQueueEditor();
+            }
+        });
+        document.getElementById('calPrev').addEventListener('click', () => {
+            showCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1));
+        });
+        document.getElementById('calNext').addEventListener('click', () => {
+            showCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1));
+        });
+        document.getElementById('calToday').addEventListener('click', () => {
+            showCalendarMonth(new Date());
+        });
+        document.getElementById('queueDayClose').addEventListener('click', closeQueueDay);
+        document.getElementById('queueDayPrev').addEventListener('click', () => stepQueueDay(-1));
+        document.getElementById('queueDayNext').addEventListener('click', () => stepQueueDay(1));
+        document.getElementById('newScheduleBtn').addEventListener('click', openScheduleModal);
+        document.getElementById('scheduleModalClose').addEventListener('click', closeScheduleModal);
+        scheduleModal.addEventListener('click', (event) => {
+            if (event.target === scheduleModal) {
+                closeScheduleModal();
+            }
+        });
+        window.openScheduleModal = openScheduleModal;
+        window.toggleStatusFilter = toggleStatusFilter;
+        queueDayModal.addEventListener('click', (event) => {
+            if (event.target === queueDayModal) {
+                closeQueueDay();
+            }
+        });
+        // Escape closes the top-most pop-up first (the editor opens over
+        // the day pop-up).
+        document.addEventListener('keydown', (event) => {
+            if (event.key !== 'Escape') {
+                return;
+            }
+            if (scheduleModal.style.display === 'flex') {
+                closeScheduleModal();
+            } else if (queueEditorModal.style.display === 'flex') {
+                closeQueueEditor();
+            } else if (openDayKey) {
+                closeQueueDay();
             }
         });
 

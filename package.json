@@ -7,7 +7,7 @@
     "start": "node index.js",
     "dev": "node index.js",
     "build": "node scripts/build.js",
-    "test": "node test.js",
+    "test": "node tests/bug-exploration.test.js && node tests/preservation.test.js && node tests/news-and-scheduling.test.js",
     "migrate:supabase": "node -e \"const path=require('path'); const base=path.dirname(process.env.npm_package_json || path.join(process.cwd(),'package.json')); require(path.join(base,'scripts','migrate-local-state-to-supabase.js'));\""
   },
   "dependencies": {

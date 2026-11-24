@@ -689,19 +689,385 @@
             color: rgba(255, 255, 255, 0.6);
             font-size: 0.9rem;
         }
+
+        /* Form controls: use the page font, native dark pickers/dropdowns,
+           and never let a control push its grid cell wider than the card. */
+        button, input, select, textarea {
+            font-family: inherit;
+        }
+
+        .form-input {
+            width: 100%;
+            min-width: 0;
+            color-scheme: dark;
+        }
+
+        select.form-input option {
+            background: #1e293b;
+            color: #ffffff;
+        }
+
+        .form-group,
+        .posts-grid > * {
+            min-width: 0;
+        }
+
+        button:focus-visible,
+        a:focus-visible {
+            outline: 2px solid #67e8f9;
+            outline-offset: 2px;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .form-actions .submit-btn {
+            flex: 1 1 240px;
+            width: auto;
+        }
+
+        .telegram-btn {
+            flex: 0 1 auto;
+            padding: 1rem 1.5rem;
+            background: linear-gradient(135deg, #0088cc, #006699);
+            border: none;
+            border-radius: 12px;
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0, 136, 204, 0.4);
+        }
+
+        .telegram-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 136, 204, 0.5);
+        }
+
+        .telegram-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .ai-bot-wrap {
+            position: relative;
+        }
+
+        .ai-bot-popup {
+            overflow-wrap: break-word;
+        }
+
+        .ai-input {
+            min-width: 0;
+        }
+
+        .ai-send-btn {
+            flex: none;
+            white-space: nowrap;
+        }
+
+        .badge-custom {
+            background: rgba(148, 163, 184, 0.2);
+            color: #e2e8f0;
+            border: 1px solid rgba(148, 163, 184, 0.45);
+        }
+
+        .custom-topic-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+            max-width: 460px;
+        }
+
+        .custom-topic-row .form-input {
+            flex: 1;
+        }
+
+        .custom-topic-row .action-btn {
+            flex: none;
+            white-space: nowrap;
+        }
+
+        .article-source-meta {
+            margin-bottom: 0.2rem;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+        }
+
+        .view-toggle,
+        .export-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .post-card,
+        .post-content,
+        .article-source-title {
+            overflow-wrap: anywhere;
+        }
+
+        .post-header {
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .post-analytics {
+            flex-wrap: wrap;
+            gap: 0.5rem 1.5rem;
+        }
+
+        .post-actions {
+            flex-wrap: wrap;
+        }
+
+        /* Calendar view: keep 7 readable columns and scroll sideways on
+           narrow screens instead of squashing or overflowing the card. */
+        .posts-grid.calendar-mode {
+            grid-template-columns: repeat(7, minmax(84px, 1fr));
+            gap: 0.5rem;
+            overflow-x: auto;
+            padding-bottom: 0.5rem;
+        }
+
+        .calendar-day-header {
+            text-align: center;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.8);
+            padding: 0.5rem 0;
+            font-size: 0.85rem;
+        }
+
+        .calendar-day-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 0.5rem;
+            min-height: 110px;
+        }
+
+        .calendar-day-card.has-posts {
+            border-color: #06b6d4;
+            background: rgba(6, 182, 212, 0.1);
+        }
+
+        .calendar-day-number {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 0.35rem;
+            font-weight: 600;
+        }
+
+        .calendar-post-chip {
+            display: block;
+            background: none;
+            border: none;
+            padding: 0;
+            margin-bottom: 0.25rem;
+            cursor: pointer;
+        }
+
+        /* Edit modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(2, 6, 23, 0.72);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            z-index: 1000;
+        }
+
+        .modal-overlay.open {
+            display: flex;
+        }
+
+        .modal-card {
+            width: min(720px, 100%);
+            max-height: calc(100vh - 2rem);
+            background: linear-gradient(180deg, rgba(30, 41, 59, 0.98), rgba(15, 23, 42, 0.98));
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 20px;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+        }
+
+        .modal-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .modal-head h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            flex: none;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            color: #ffffff;
+            font-size: 1.3rem;
+            line-height: 1;
+            cursor: pointer;
+        }
+
+        .modal-textarea {
+            min-height: 260px;
+            flex: 1 1 auto;
+            resize: vertical;
+            line-height: 1.6;
+        }
+
+        .modal-foot {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .modal-count {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.85rem;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 0.6rem;
+            margin-left: auto;
+        }
+
+        @media (max-width: 768px) {
+            .nav {
+                padding: 0 1rem;
+                gap: 0.75rem;
+            }
+
+            .logo-text {
+                font-size: 1.4rem;
+            }
+
+            .back-btn {
+                padding: 0.6rem 0.9rem;
+                font-size: 0.9rem;
+                white-space: nowrap;
+            }
+
+            .container {
+                padding: 1.5rem 1rem;
+            }
+
+            .page-title {
+                font-size: 2rem;
+            }
+
+            .page-subtitle {
+                font-size: 1rem;
+                margin-bottom: 2rem;
+            }
+
+            .form-section,
+            .results-section {
+                padding: 1.25rem;
+                border-radius: 16px;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .pattern-picker-box {
+                padding: 1rem;
+            }
+
+            .mode-toggle-group {
+                flex-direction: column;
+                gap: 0.6rem;
+            }
+
+            .add-category-btns {
+                flex-wrap: wrap;
+            }
+
+            .form-actions {
+                flex-direction: column;
+            }
+
+            .form-actions .submit-btn,
+            .telegram-btn {
+                flex: none;
+                width: 100%;
+            }
+
+            .results-header {
+                flex-direction: column;
+                align-items: stretch;
+                margin-bottom: 1.25rem;
+            }
+
+            .results-title {
+                font-size: 1.4rem;
+            }
+
+            .post-card {
+                padding: 1rem;
+            }
+
+            /* Anchor the AI popup to the whole action row so it spans the
+               card instead of hanging 320px off the left edge of the screen. */
+            .post-actions {
+                position: relative;
+            }
+
+            .ai-bot-wrap {
+                position: static;
+            }
+
+            .ai-bot-popup {
+                left: 0;
+                right: 0;
+                width: auto;
+            }
+        }
     </style>
+    <link rel="icon" type="image/png" href="/logo.png">
+    <meta name="theme-color" content="#0a0f1e">
+    <link rel="stylesheet" href="/theme.css">
 </head>
 
-<body>
-    <header class="header">
-        <nav class="nav">
-            <a href="index.html" class="logo">
-                <span class="logo-text">PostCraft AI</span>
+<body class="page-generator">
+    <header class="site-header">
+        <div class="site-header-inner">
+            <a class="brand" href="/index.html?skipIntro=1">
+                <img src="/logo.png" alt="">
+                <span>PostCraft AI</span>
             </a>
-            <a href="index.html" class="back-btn">
-                ← Back to Home
-            </a>
-        </nav>
+            <nav class="site-nav" aria-label="Main">
+                <a href="/index.html?skipIntro=1">Home</a>
+                <a href="/generator.html?platform=linkedin" aria-current="page">Generator</a>
+                <a href="/publisher.html">Publishing Hub</a>
+            </nav>
+        </div>
     </header>
 
     <div class="container">
@@ -752,22 +1118,22 @@
                 <!-- Category Pattern per Day Range -->
                 <div class="pattern-picker-box">
                     <label class="form-label" style="font-size: 1rem; margin-bottom: 0.75rem; display: block;">
-                        📰 Content Category Pattern per Day Range
+                        Content categories
                     </label>
 
                     <div class="mode-toggle-group">
                         <button type="button" class="mode-btn active" id="modeRotationBtn" onclick="setCategoryMode('rotation')">
-                            🔄 Rotation Mode (Repeating Order)
+                            <span class="ico ico-repeat" aria-hidden="true"></span> Rotation (repeating order)
                         </button>
                         <button type="button" class="mode-btn" id="modeBlockBtn" onclick="setCategoryMode('block')">
-                            ⏹️ Block Mode (Single Category)
+                            <span class="ico ico-square" aria-hidden="true"></span> Block (single category)
                         </button>
                     </div>
 
                     <!-- Rotation Mode Picker -->
                     <div id="rotationPickerUI">
                         <div class="form-label" style="font-size: 0.85rem; color: rgba(255,255,255,0.7); margin-bottom: 0.5rem;">
-                            Daily Category Sequence (Day 1 → Day 2 → Day 3...):
+                            Daily sequence (Day 1 → Day 2 → Day 3…)
                         </div>
                         <div class="category-sequence-list" id="categorySequenceList">
                             <!-- Populated dynamically -->
@@ -778,6 +1144,12 @@
                             <button type="button" class="add-cat-btn" onclick="addCategoryToSequence('science')">+ Science</button>
                             <button type="button" class="add-cat-btn" onclick="addCategoryToSequence('dental')">+ Dental</button>
                         </div>
+                        <!-- Any topic of your own: news for it is searched live. -->
+                        <div class="custom-topic-row">
+                            <input type="text" id="customTopicInput" class="form-input" maxlength="40"
+                                   placeholder="Your own topic, e.g. electric vehicles" aria-label="Custom news topic">
+                            <button type="button" class="action-btn" onclick="addCustomTopic()">Add topic</button>
+                        </div>
                     </div>
 
                     <!-- Block Mode Picker -->
@@ -785,20 +1157,23 @@
                         <div class="form-label" style="font-size: 0.85rem; color: rgba(255,255,255,0.7); margin-bottom: 0.5rem;">
                             Select category for all dates in the range:
                         </div>
-                        <select id="blockCategorySelect" class="form-input" style="max-width: 300px;">
+                        <select id="blockCategorySelect" class="form-input" style="max-width: 300px;" aria-label="Category for all dates">
                             <option value="tech">Tech (TechCrunch Feed)</option>
                             <option value="science">Science (ScienceDaily Feed)</option>
                             <option value="dental">Dental (Dentistry Today Feed)</option>
+                            <option value="__custom">Your own topic…</option>
                         </select>
+                        <input type="text" id="blockCustomTopic" class="form-input" maxlength="40" style="max-width: 300px; margin-top: 0.6rem; display: none;"
+                               placeholder="e.g. electric vehicles" aria-label="Custom news topic">
                     </div>
                 </div>
 
-                <div style="display: flex; gap: 1rem;">
-                    <button type="submit" class="submit-btn" id="submitButton" style="flex: 1;">
+                <div class="form-actions">
+                    <button type="submit" class="submit-btn" id="submitButton">
                         Generate LinkedIn Posts
                     </button>
-                    <button type="button" class="action-btn" id="telegramVerifyBtn" onclick="sendTelegramVerification()" style="padding: 1rem 1.5rem; background: linear-gradient(135deg, #0088cc, #006699); border-radius: 12px; font-weight: 600; font-size: 0.95rem; box-shadow: 0 4px 15px rgba(0, 136, 204, 0.4);">
-                        Send Top 3 to Telegram (@linked_automation_bot)
+                    <button type="button" class="telegram-btn" id="telegramVerifyBtn" title="Sends today's top 3 news topics to @linked_automation_bot" onclick="sendTelegramVerification()">
+                        Send top 3 to Telegram
                     </button>
                 </div>
             </form>
@@ -817,13 +1192,13 @@
                 <h2 class="results-title" id="resultsTitle">Your LinkedIn Posts</h2>
                 <div class="results-actions">
                     <div class="view-toggle">
-                        <button class="action-btn active" id="listViewBtn" onclick="switchView('list')">📋 List</button>
-                        <button class="action-btn" id="calendarViewBtn" onclick="switchView('calendar')">📅 Calendar</button>
+                        <button class="action-btn with-ico active" id="listViewBtn" onclick="switchView('list')"><span class="ico ico-list" aria-hidden="true"></span> List</button>
+                        <button class="action-btn with-ico" id="calendarViewBtn" onclick="switchView('calendar')"><span class="ico ico-calendar" aria-hidden="true"></span> Calendar</button>
                     </div>
                     <div class="export-actions">
-                        <button class="action-btn" onclick="exportToPDF()">📄 Export PDF</button>
-                        <button class="action-btn" onclick="exportToCSV()">📊 Export CSV</button>
-                        <button class="action-btn" onclick="generateNew()">🔄 Generate New</button>
+                        <button class="action-btn with-ico" onclick="exportToPDF()"><span class="ico ico-file" aria-hidden="true"></span> Export Text</button>
+                        <button class="action-btn with-ico" onclick="exportToCSV()"><span class="ico ico-table" aria-hidden="true"></span> Export CSV</button>
+                        <button class="action-btn with-ico" onclick="generateNew()"><span class="ico ico-refresh" aria-hidden="true"></span> Generate New</button>
                     </div>
                 </div>
             </div>
@@ -833,9 +1208,33 @@
         </div>
     </div>
 
+    <!-- Edit Post Modal -->
+    <div class="modal-overlay" id="editModal" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
+        <div class="modal-card">
+            <div class="modal-head">
+                <h3 id="editModalTitle">Edit Post</h3>
+                <button type="button" class="modal-close" onclick="closeEditModal()" aria-label="Close">&times;</button>
+            </div>
+            <textarea id="editModalContent" class="form-input modal-textarea" aria-label="Post content"></textarea>
+            <div class="modal-foot">
+                <span class="modal-count" id="editModalCount"></span>
+                <div class="modal-actions">
+                    <button type="button" class="action-btn" onclick="closeEditModal()">Cancel</button>
+                    <button type="button" class="action-btn active" onclick="saveEditModal()">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/ui.js"></script>
     <script>
+        // In-page notifications instead of blocking alert() pop-ups.
+        const notifyError = (message) => PostCraftUI.toast(message, 'error');
+        const notifySuccess = (message) => PostCraftUI.toast(message, 'success');
+
         let currentCalendar = [];
         let currentPlatform = 'linkedin';
+        let currentView = 'list';
         let currentCategoryMode = 'rotation';
         let rotationCategories = ['tech', 'science', 'dental'];
 
@@ -844,6 +1243,37 @@
             science: { name: 'Science', badgeClass: 'badge-science' },
             dental: { name: 'Dental', badgeClass: 'badge-dental' }
         };
+
+        // Built-in categories have their own colours; anything else is a
+        // custom topic typed by the user.
+        function getCategoryMeta(category) {
+            const key = String(category || 'tech').toLowerCase();
+            if (categoryMeta[key]) return categoryMeta[key];
+            const name = key.replace(/(^|[^a-z0-9])[a-z]/g, (letter) => letter.toUpperCase());
+            return { name, badgeClass: 'badge-custom' };
+        }
+
+        // Same cleaning the server applies, so the chip shows what is sent.
+        function normalizeTopic(value) {
+            return String(value || '').toLowerCase().replace(/[^a-z0-9 &+.\-]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 40);
+        }
+
+        function addCustomTopic() {
+            const input = document.getElementById('customTopicInput');
+            const topic = normalizeTopic(input.value);
+            if (topic.length < 2) {
+                notifyError('Type a topic first, for example "electric vehicles".');
+                return;
+            }
+            input.value = '';
+            addCategoryToSequence(topic);
+        }
+
+        // If the session has expired (or the page was opened signed out),
+        // go to sign-in and come straight back here afterwards.
+        function goToSignIn() {
+            window.location.href = '/auth.html?next=' + encodeURIComponent('/generator.html?platform=linkedin');
+        }
 
         function setCategoryMode(mode) {
             currentCategoryMode = mode;
@@ -875,11 +1305,11 @@
             }
 
             rotationCategories.forEach((cat, index) => {
-                const meta = categoryMeta[cat] || { name: cat, badgeClass: 'badge-tech' };
+                const meta = getCategoryMeta(cat);
                 const chip = document.createElement('div');
                 chip.className = `sequence-chip ${meta.badgeClass}`;
                 chip.innerHTML = `
-                    <span>Day ${index + 1}: ${meta.name}</span>
+                    <span>Day ${index + 1}: ${escapeHtml(meta.name)}</span>
                     <div class="chip-actions">
                         ${index > 0 ? `<button type="button" class="chip-btn" onclick="moveCategory(${index}, -1)" title="Move up">↑</button>` : ''}
                         ${index < rotationCategories.length - 1 ? `<button type="button" class="chip-btn" onclick="moveCategory(${index}, 1)" title="Move down">↓</button>` : ''}
@@ -897,7 +1327,7 @@
 
         function removeCategory(index) {
             if (rotationCategories.length <= 1) {
-                alert('You must have at least one category in rotation mode!');
+                notifyError('Keep at least one category in the rotation.');
                 return;
             }
             rotationCategories.splice(index, 1);
@@ -921,6 +1351,23 @@
             document.getElementById('endDate').value = nextWeek.toISOString().split('T')[0];
 
             renderCategorySequence();
+
+            document.getElementById('customTopicInput').addEventListener('keydown', function(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    addCustomTopic();
+                }
+            });
+            document.getElementById('blockCategorySelect').addEventListener('change', function() {
+                document.getElementById('blockCustomTopic').style.display = this.value === '__custom' ? 'block' : 'none';
+            });
+
+            // Generating posts needs a signed-in session.
+            fetch('/auth/session').then(function(response) {
+                if (response.status === 401) {
+                    goToSignIn();
+                }
+            }).catch(function() { /* offline: the form will report it on submit */ });
         });
 
         async function readJsonResponse(response) {
@@ -946,7 +1393,13 @@
             if (currentCategoryMode === 'rotation') {
                 data.categories = rotationCategories.length > 0 ? rotationCategories : ['tech', 'science', 'dental'];
             } else {
-                data.categories = [document.getElementById('blockCategorySelect').value || 'tech'];
+                const selected = document.getElementById('blockCategorySelect').value || 'tech';
+                const topic = selected === '__custom' ? normalizeTopic(document.getElementById('blockCustomTopic').value) : selected;
+                if (topic.length < 2) {
+                    notifyError('Type your own topic, or pick one of the built-in categories.');
+                    return;
+                }
+                data.categories = [topic];
             }
             
             // Show loading
@@ -963,17 +1416,22 @@
                     body: JSON.stringify(data)
                 });
                 
+                if (response.status === 401) {
+                    goToSignIn();
+                    return;
+                }
+
                 const result = await readJsonResponse(response);
                 
                 if (result.success) {
                     currentCalendar = result.calendar;
                     displayResults(result.calendar);
                 } else {
-                    throw new Error(result.error || 'Failed to generate posts');
+                    throw new Error(result.details || result.error || 'Failed to generate posts');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert(error.message || 'Failed to generate posts. Please try again.');
+                notifyError(error.message || 'Failed to generate posts. Please try again.');
                 document.querySelector('.form-section').style.display = 'block';
             } finally {
                 document.getElementById('loading').style.display = 'none';
@@ -981,25 +1439,36 @@
         });
 
         function getCategoryBadgeHtml(category) {
-            const cat = String(category || 'tech').toLowerCase();
-            const meta = categoryMeta[cat] || { name: cat, badgeClass: 'badge-tech' };
-            return `<span class="category-badge ${meta.badgeClass}">${meta.name}</span>`;
+            const meta = getCategoryMeta(category);
+            return `<span class="category-badge ${meta.badgeClass}">${escapeHtml(meta.name)}</span>`;
+        }
+
+        function escapeHtml(value) {
+            return String(value == null ? '' : value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
         }
 
         function displayResults(calendar) {
+            currentView = 'list';
             const container = document.getElementById('postsContainer');
-            container.style.display = 'grid';
-            container.style.gridTemplateColumns = '1fr';
+            container.className = 'posts-grid';
+            container.removeAttribute('style');
             container.innerHTML = '';
-            
+
             calendar.forEach((post, index) => {
                 const postCard = document.createElement('div');
                 postCard.className = 'post-card';
-                
+
+                const safeLink = /^https?:\/\//i.test(String(post.articleLink || '')) ? escapeHtml(post.articleLink) : '';
                 const articleBox = post.articleTitle ? `
                     <div class="article-source-box">
-                        <div class="article-source-title">📰 Source News: ${post.articleTitle}</div>
-                        ${post.articleLink ? `<a href="${post.articleLink}" target="_blank" rel="noopener" class="article-source-link">Read full story → ${post.articleLink}</a>` : ''}
+                        <div class="article-source-meta">${escapeHtml([post.articleSource, describeStoryAge(post.articlePublishedAt)].filter(Boolean).join(' · '))}</div>
+                        <div class="article-source-title"><span class="ico ico-news" aria-hidden="true"></span> Source: ${escapeHtml(post.articleTitle)}</div>
+                        ${safeLink ? `<a href="${safeLink}" target="_blank" rel="noopener" class="article-source-link">Read full story → ${safeLink}</a>` : ''}
                     </div>
                 ` : '';
 
@@ -1009,7 +1478,7 @@
                         <div>${getCategoryBadgeHtml(post.category)}</div>
                     </div>
                     ${articleBox}
-                    <div class="post-content">${post.post}</div>
+                    <div class="post-content">${escapeHtml(post.post)}</div>
                     <div class="post-analytics">
                         <div class="analytics-item">
                             <span class="analytics-label">Length:</span>
@@ -1020,20 +1489,20 @@
                             <span class="analytics-value">${(post.post.match(/#\w+/g) || []).length}</span>
                         </div>
                         <div class="analytics-item">
-                            <span class="analytics-label">Engagement Score:</span>
-                            <span class="analytics-value">${calculateEngagementScore(post)}%</span>
+                            <span class="analytics-label">Words:</span>
+                            <span class="analytics-value">${post.post.trim().split(/\s+/).filter(Boolean).length}</span>
                         </div>
                     </div>
                     <div class="post-actions">
                         <button class="post-action-btn" onclick="copyPost(${index})">Copy</button>
                         <button class="post-action-btn" onclick="editPost(${index})">Edit</button>
-                        <div style="position: relative;">
+                        <div class="ai-bot-wrap">
                             <button class="ai-bot-btn" onclick="toggleAIBotPopup(${index})" title="AI Assistant">
-                                🤖 AI Assist
+                                <span class="ico ico-sparkles" aria-hidden="true"></span> AI Assist
                             </button>
                             <div class="ai-bot-popup" id="aiPopup${index}">
                                 <div class="ai-popup-header">
-                                    <div class="ai-popup-title">🤖 AI Assistant</div>
+                                    <div class="ai-popup-title"><span class="ico ico-sparkles" aria-hidden="true"></span> AI Assistant</div>
                                     <button class="ai-close-btn" onclick="closeAIBotPopup(${index})">&times;</button>
                                 </div>
                                 <div class="ai-chat-area" id="aiChatArea${index}">
@@ -1074,14 +1543,67 @@
             });
         }
 
+        // Editing happens in a modal with a real textarea so line breaks and
+        // hashtags survive (a browser prompt() flattens the post to one line).
+        let editingPostIndex = -1;
+
+        function updateEditModalCount() {
+            const textarea = document.getElementById('editModalContent');
+            document.getElementById('editModalCount').textContent = `${textarea.value.length} chars`;
+        }
+
         function editPost(index) {
             const post = currentCalendar[index];
-            const newContent = prompt('Edit your post:', post.post);
-            if (newContent && newContent !== post.post) {
-                currentCalendar[index].post = newContent;
+            if (!post) return;
+
+            editingPostIndex = index;
+            const textarea = document.getElementById('editModalContent');
+            const dateLabel = new Date(post.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+            document.getElementById('editModalTitle').textContent = `Edit Post · ${dateLabel}`;
+            textarea.value = post.post;
+            updateEditModalCount();
+            document.getElementById('editModal').classList.add('open');
+            textarea.focus();
+        }
+
+        function closeEditModal() {
+            editingPostIndex = -1;
+            document.getElementById('editModal').classList.remove('open');
+        }
+
+        function saveEditModal() {
+            const newContent = document.getElementById('editModalContent').value.trim();
+            if (!newContent) {
+                notifyError('Post content cannot be empty.');
+                return;
+            }
+
+            if (editingPostIndex >= 0 && currentCalendar[editingPostIndex]) {
+                currentCalendar[editingPostIndex].post = newContent;
+            }
+            closeEditModal();
+            renderCurrentView();
+        }
+
+        function renderCurrentView() {
+            if (currentView === 'calendar') {
+                displayCalendarView(currentCalendar);
+            } else {
                 displayResults(currentCalendar);
             }
         }
+
+        document.getElementById('editModalContent').addEventListener('input', updateEditModalCount);
+        document.getElementById('editModal').addEventListener('click', function(event) {
+            if (event.target === this) {
+                closeEditModal();
+            }
+        });
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape' && document.getElementById('editModal').classList.contains('open')) {
+                closeEditModal();
+            }
+        });
 
         function exportToPDF() {
             const content = currentCalendar.map(post => {
@@ -1121,22 +1643,14 @@
             URL.revokeObjectURL(url);
         }
 
-        function calculateEngagementScore(post) {
-            let score = 78;
-            
-            // News posts with source reference score higher
-            if (post.articleTitle) score += 10;
-            
-            const length = post.post.length;
-            if (length >= 100 && length <= 350) score += 8;
-            else if (length > 500) score -= 8;
-            
-            const hashtagCount = (post.post.match(/#\w+/g) || []).length;
-            score += Math.min(hashtagCount * 3, 12);
-            
-            if (post.post.includes('?')) score += 5;
-            
-            return Math.min(score, 100);
+        // "2h ago" / "3d ago" for a story's publish time, or '' if unknown.
+        function describeStoryAge(publishedAt) {
+            const time = new Date(publishedAt || '').getTime();
+            if (Number.isNaN(time)) return '';
+            const hours = (Date.now() - time) / 3600000;
+            if (hours < 1) return 'just now';
+            if (hours < 24) return `${Math.round(hours)}h ago`;
+            return `${Math.round(hours / 24)}d ago`;
         }
 
         function switchView(viewType) {
@@ -1155,12 +1669,16 @@
         }
 
         function displayCalendarView(calendar) {
+            currentView = 'calendar';
             const container = document.getElementById('postsContainer');
             container.innerHTML = '';
-            container.style.display = 'grid';
-            container.style.gridTemplateColumns = 'repeat(7, 1fr)';
-            container.style.gap = '0.75rem';
-            
+            container.className = 'posts-grid calendar-mode';
+            container.removeAttribute('style');
+
+            if (!calendar.length) {
+                return;
+            }
+
             const postsByDate = {};
             calendar.forEach(post => {
                 const date = new Date(post.date).toDateString();
@@ -1174,7 +1692,7 @@
             const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             dayHeaders.forEach(day => {
                 const dayHeader = document.createElement('div');
-                dayHeader.style.cssText = 'text-align: center; font-weight: 600; color: rgba(255,255,255,0.8); padding: 0.5rem;';
+                dayHeader.className = 'calendar-day-header';
                 dayHeader.textContent = day;
                 container.appendChild(dayHeader);
             });
@@ -1187,28 +1705,15 @@
                 const dateStr = currentDate.toDateString();
                 const postsForDay = postsByDate[dateStr] || [];
                 
-                dayCard.style.cssText = `
-                    background: rgba(255, 255, 255, 0.05);
-                    border-radius: 8px;
-                    padding: 0.5rem;
-                    min-height: 110px;
-                    border: 1px solid rgba(255, 255, 255, 0.1);
-                    ${postsForDay.length > 0 ? 'border-color: #06b6d4; background: rgba(6, 182, 212, 0.1);' : ''}
-                `;
-                
+                dayCard.className = `calendar-day-card${postsForDay.length > 0 ? ' has-posts' : ''}`;
+
                 dayCard.innerHTML = `
-                    <div style="font-size: 0.8rem; color: rgba(255,255,255,0.7); margin-bottom: 0.35rem; font-weight: 600;">
-                        ${currentDate.getDate()}
-                    </div>
-                    ${postsForDay.map(post => {
-                        const cat = String(post.category || 'tech').toLowerCase();
-                        const meta = categoryMeta[cat] || { name: cat, emoji: '📰' };
-                        return `
-                            <div style="font-size: 0.75rem; margin-bottom: 0.25rem; cursor: pointer;" onclick="showPostPreview('${post.date}')">
-                                ${getCategoryBadgeHtml(post.category)}
-                            </div>
-                        `;
-                    }).join('')}
+                    <div class="calendar-day-number">${currentDate.getDate()}</div>
+                    ${postsForDay.map(post => `
+                        <button type="button" class="calendar-post-chip" title="Open this post" onclick="showPostPreview(${calendar.indexOf(post)})">
+                            ${getCategoryBadgeHtml(post.category)}
+                        </button>
+                    `).join('')}
                 `;
                 
                 container.appendChild(dayCard);
@@ -1216,12 +1721,10 @@
             }
         }
 
-        function showPostPreview(date) {
-            const post = currentCalendar.find(p => p.date === date);
-            if (post) {
-                const cat = (post.category || 'tech').toUpperCase();
-                alert(`Category: ${cat}\nHeadline: ${post.articleTitle || 'N/A'}\n\n${post.post}`);
-            }
+        // Clicking a post in the calendar opens it in the same editor modal
+        // used by the list view.
+        function showPostPreview(index) {
+            editPost(index);
         }
 
         function generateNew() {
@@ -1262,7 +1765,7 @@
             
             const loadingDiv = document.createElement('div');
             loadingDiv.className = 'ai-chat-message bot';
-            loadingDiv.innerHTML = '🤔 Thinking...';
+            loadingDiv.textContent = 'Thinking…';
             chatArea.appendChild(loadingDiv);
             
             chatArea.scrollTop = chatArea.scrollHeight;
@@ -1313,7 +1816,7 @@
                 } else {
                     const errorDiv = document.createElement('div');
                     errorDiv.className = 'ai-chat-message bot';
-                    errorDiv.textContent = '❌ Sorry, I encountered an error. Please try again.';
+                    errorDiv.textContent = 'Sorry, something went wrong. Please try again.';
                     chatArea.appendChild(errorDiv);
                 }
             } catch (error) {
@@ -1322,7 +1825,7 @@
                 }
                 const errorDiv = document.createElement('div');
                 errorDiv.className = 'ai-chat-message bot';
-                errorDiv.textContent = '❌ Sorry, I encountered an error. Please try again.';
+                errorDiv.textContent = 'Sorry, something went wrong. Please try again.';
                 chatArea.appendChild(errorDiv);
             }
             
@@ -1334,16 +1837,7 @@
             displayResults(currentCalendar);
             closeAIBotPopup(postIndex);
             
-            const successMsg = document.createElement('div');
-            successMsg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #10b981; color: white; padding: 1rem; border-radius: 8px; z-index: 2000; box-shadow: 0 4px 12px rgba(0,0,0,0.3);';
-            successMsg.textContent = '✅ Post updated successfully!';
-            document.body.appendChild(successMsg);
-            
-            setTimeout(() => {
-                if (document.body.contains(successMsg)) {
-                    document.body.removeChild(successMsg);
-                }
-            }, 3000);
+            notifySuccess('Post updated.');
         }
 
         async function sendTelegramVerification() {
@@ -1366,12 +1860,12 @@
 
                 const result = await readJsonResponse(response);
                 if (result.success) {
-                    alert(`Top 3 daily news topics sent to Telegram chat!\n\nOpen Telegram (@linked_automation_bot) and reply 1, 2, or 3 to generate and publish directly to LinkedIn.`);
+                    PostCraftUI.toast('Top 3 news topics sent. Open @linked_automation_bot on Telegram and reply 1, 2 or 3 to publish to LinkedIn.', 'success', 9000);
                 } else {
-                    alert(result.error || 'Please open Telegram and send /start to @linked_automation_bot first so the bot can message you!');
+                    notifyError(result.error || 'Open Telegram and send /start to @linked_automation_bot first, so the bot can message you.');
                 }
             } catch (error) {
-                alert('Sent options! Open @linked_automation_bot on Telegram and reply 1, 2, or 3.');
+                notifyError('Could not reach the server, so nothing was sent to Telegram. Please try again.');
             } finally {
                 btn.textContent = originalText;
                 btn.disabled = false;

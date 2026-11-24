@@ -4,8 +4,8 @@ const cors = require('cors');
 const axios = require('axios');
 const cookie = require('cookie');
 const LinkedInPostGenerator = require('./linkedinPostGenerator');
-const { readState, writeState, createId, upsertProfile, getProfile, createTelegramLinkCode, unlinkTelegramChat } = require('./services/publishingStore');
-const { createScheduleAndQueue, publishQueueItem, startScheduler } = require('./services/schedulerService');
+const { readState, writeState, createId, upsertProfile, getProfile, createTelegramLinkCode, unlinkTelegramChat, updateQueueItem, deleteQueueItems, deleteSchedule } = require('./services/publishingStore');
+const { createScheduleAndQueue, publishQueueItem, publishDueQueueItems, startScheduler } = require('./services/schedulerService');
 const telegramService = require('./services/telegramService');
 const {
     getLinkedInOAuthConfig,
@@ -23,6 +23,8 @@ const app = express();
 const port = process.env.PORT || 3000;
 const SESSION_COOKIE_NAME = 'postcraft_session';
 const isProduction = process.env.NODE_ENV === 'production';
+// Vercel (serverless) vs a long-running local process.
+const isVercel = Boolean(process.env.VERCEL || process.env.VERCEL_ENV);
 
 // ---------------------------------------------------------------------------
 // "Sign in with LinkedIn" IS the login here — there's no separate email/
@@ -154,6 +156,15 @@ app.post('/session/clear', requireAuth, async (req, res) => {
 
 app.get('/publishing/overview', async (req, res) => {
     try {
+        // The hosted cron only runs once a day, so opening the Publishing Hub
+        // also handles this person's own posts that have come due since
+        // then. Failures here must never stop the page from loading.
+        try {
+            await publishDueQueueItems({ limit: 5 }, req.userContext);
+        } catch (dueError) {
+            console.error('Could not process due posts on overview load:', dueError.message);
+        }
+
         const state = await readState(req.userContext);
         res.json({ success: true, ...filterLinkedInState(state) });
     } catch (error) {
@@ -395,7 +406,10 @@ app.post('/publishing/schedules', async (req, res) => {
             countryCode,
             preferredHour,
             startDate,
-            endDate
+            endDate,
+            mode,
+            categories,
+            timeZone
         } = req.body;
 
         if (!platform || !accountId || !postsPerWeek) {
@@ -423,14 +437,34 @@ app.post('/publishing/schedules', async (req, res) => {
             industry,
             services: normalizedServices,
             countryCode,
-            preferredHour: Number(preferredHour || 10),
-            startDate: startDate ? new Date(startDate) : new Date(),
-            endDate: endDate ? new Date(endDate) : undefined
+            preferredHour: Math.min(23, Math.max(0, Number(preferredHour || 10))),
+            // Passed as typed ("YYYY-MM-DD"): they are calendar dates in the
+            // person's own time zone, which the scheduler resolves.
+            startDate: startDate || undefined,
+            endDate: endDate || undefined,
+            timeZone,
+            mode,
+            categories: Array.isArray(categories) ? categories : (categories ? [categories] : [])
         }, req.userContext);
 
         res.json({ success: true, ...result });
     } catch (error) {
         res.status(500).json({ success: false, error: 'Failed to create schedule', details: error.message });
+    }
+});
+
+// Removes a schedule and every post it put on the calendar.
+app.delete('/publishing/schedules/:id', async (req, res) => {
+    try {
+        const state = await readState(req.userContext);
+        if (!state.schedules.some((schedule) => schedule.id === req.params.id)) {
+            return res.status(404).json({ success: false, error: 'Schedule not found' });
+        }
+
+        const result = await deleteSchedule(req.params.id, req.userContext);
+        res.json({ success: true, ...result });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Failed to delete schedule', details: error.message });
     }
 });
 
@@ -464,9 +498,12 @@ app.post('/publishing/queue/:id/publish', async (req, res) => {
 
 app.patch('/publishing/queue/:id', async (req, res) => {
     try {
-        const { content } = req.body;
-        if (!content || !content.trim()) {
-            return res.status(400).json({ success: false, error: 'content is required' });
+        const { content, scheduledFor } = req.body || {};
+        const hasContent = typeof content === 'string' && content.trim().length > 0;
+        const hasDate = Boolean(scheduledFor);
+
+        if (!hasContent && !hasDate) {
+            return res.status(400).json({ success: false, error: 'content or scheduledFor is required' });
         }
 
         const state = await readState(req.userContext);
@@ -475,21 +512,57 @@ app.patch('/publishing/queue/:id', async (req, res) => {
             return res.status(404).json({ success: false, error: 'Queue item not found' });
         }
 
-        item.content = content.trim();
-        item.updatedAt = new Date().toISOString();
-        if (item.metadata) {
-            item.metadata.contentStatus = 'manually_edited';
+        const patch = { updatedAt: new Date().toISOString() };
+
+        if (hasContent) {
+            patch.content = content.trim();
+            patch.metadata = { ...(item.metadata || {}), contentStatus: 'manually_edited' };
         }
 
-        await writeState(state, req.userContext);
-        res.json({ success: true, item });
+        if (hasDate) {
+            if (item.status === 'published' || item.status === 'publishing') {
+                return res.status(400).json({ success: false, error: 'A published post cannot be moved.' });
+            }
+            const when = new Date(scheduledFor);
+            if (Number.isNaN(when.getTime())) {
+                return res.status(400).json({ success: false, error: 'scheduledFor is not a valid date' });
+            }
+            patch.scheduledFor = when.toISOString();
+            // Moving a failed or waiting post puts it back in line.
+            if (item.status === 'failed' || item.status === 'pending_confirmation') {
+                patch.status = 'scheduled';
+                patch.error = null;
+                patch.errorStatus = null;
+            }
+        }
+
+        await updateQueueItem(item.id, patch, req.userContext);
+        res.json({ success: true, item: { ...item, ...patch } });
     } catch (error) {
         res.status(500).json({ success: false, error: 'Failed to update queue item', details: error.message });
     }
 });
 
+app.delete('/publishing/queue/:id', async (req, res) => {
+    try {
+        const state = await readState(req.userContext);
+        const item = state.queue.find((q) => q.id === req.params.id);
+        if (!item) {
+            return res.status(404).json({ success: false, error: 'Queue item not found' });
+        }
+        if (item.status === 'publishing') {
+            return res.status(409).json({ success: false, error: 'This post is being published right now.' });
+        }
 
-app.get('/model-status', (req, res) => {
+        await deleteQueueItems([item.id], req.userContext);
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Failed to delete queue item', details: error.message });
+    }
+});
+
+
+app.get('/model-status', requireAuth, (req, res) => {
     try {
         const status = generator.getModelStatus();
         res.json({
@@ -502,7 +575,7 @@ app.get('/model-status', (req, res) => {
 });
 
 // Reset model failures
-app.post('/reset-models', (req, res) => {
+app.post('/reset-models', requireAuth, (req, res) => {
     try {
         generator.resetModelFailures();
         res.json({
@@ -590,7 +663,8 @@ IMPROVED_POST: [The improved post here]`;
 };
 
 // Improve existing post with AI
-app.post('/improve-post', improvePostHandler);
+// Signed-in users only: every call spends AI quota.
+app.post('/improve-post', requireAuth, improvePostHandler);
 
 const generateCalendarHandler = async (req, res) => {
     try {
@@ -662,7 +736,8 @@ const generateCalendarHandler = async (req, res) => {
 };
 
 // Generate calendar endpoints
-app.post('/generate', generateCalendarHandler);
+// Signed-in users only: every call spends AI quota.
+app.post('/generate', requireAuth, generateCalendarHandler);
 
 // Telegram bot endpoints
 app.get('/telegram/status', requireAuth, async (req, res) => {
@@ -712,10 +787,21 @@ app.post('/telegram/unlink', requireAuth, async (req, res) => {
     }
 });
 
-app.post('/telegram/send-verification', async (req, res) => {
+// Sends the day's top stories to the signed-in person's OWN linked Telegram
+// chat. The chat id comes from their profile, never from the request, so
+// this cannot be used to make the bot message someone else.
+app.post('/telegram/send-verification', requireAuth, async (req, res) => {
     try {
-        const { chatId, companyName, website, services, industry } = req.body || {};
-        const result = await telegramService.sendTop3Verification(chatId, { companyName, website, services, industry });
+        const { companyName, website, services, industry } = req.body || {};
+        const profile = await getProfile(req.userContext.userId);
+        if (!profile?.telegramChatId) {
+            return res.json({
+                success: false,
+                error: 'Link Telegram first: open the Publishing Hub and use "Link Telegram".'
+            });
+        }
+
+        const result = await telegramService.sendTop3Verification(profile.telegramChatId, { companyName, website, services, industry });
         res.json(result);
     } catch (error) {
         console.error('Error sending Telegram verification:', error);
@@ -727,11 +813,37 @@ app.post('/telegram/send-verification', async (req, res) => {
     }
 });
 
-// Vercel Cron Endpoint: Triggered automatically by Vercel Cron to process due queue items
+// Vercel Cron Endpoint: processes due queue items.
+//
+// Only the scheduler may call this. Set CRON_SECRET in the Vercel project
+// settings: Vercel then sends it as "Authorization: Bearer <secret>" on every
+// cron run and nothing else is accepted. Until it is set, only requests that
+// identify as Vercel's cron runner are let through (weaker, since a header
+// can be forged), so set the secret.
+function isAuthorizedCronRequest(req) {
+    const secret = process.env.CRON_SECRET;
+    if (secret) {
+        return req.headers.authorization === `Bearer ${secret}`;
+    }
+    if (!isVercel) {
+        return false; // locally the built-in scheduler does this job
+    }
+    return String(req.headers['user-agent'] || '').startsWith('vercel-cron/');
+}
+
 app.get('/api/cron/publish', async (req, res) => {
+    if (!isAuthorizedCronRequest(req)) {
+        return res.status(401).json({ success: false, error: 'Not authorized.' });
+    }
+
     try {
-        const { publishDueQueueItems } = require('./services/schedulerService');
-        const result = await publishDueQueueItems({}, { scope: 'all' });
+        // The hosted cron runs once a day, so posts that still need a
+        // Telegram choice are sent for approval for the whole day ahead.
+        const lookaheadHours = Number(process.env.CRON_LOOKAHEAD_HOURS || 24);
+        const result = await publishDueQueueItems(
+            { confirmationLookaheadMs: lookaheadHours * 60 * 60 * 1000 },
+            { scope: 'all' }
+        );
         res.json({ success: true, timestamp: new Date().toISOString(), ...result });
     } catch (error) {
         console.error('Cron publish error:', error.message);
@@ -749,9 +861,6 @@ app.post('/api/telegram/webhook', async (req, res) => {
         res.status(500).json({ success: false, error: error.message });
     }
 });
-
-// Detect Vercel environment vs Local execution
-const isVercel = Boolean(process.env.VERCEL || process.env.VERCEL_ENV);
 
 if (!isVercel) {
     app.listen(port, () => {
