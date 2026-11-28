@@ -892,6 +892,25 @@ async function unlinkTelegramChat(userId) {
 
 // Used by the bot to figure out which app user a given Telegram chat belongs
 // to, for /verify and for confirming a scheduled post from that chat.
+// Every profile that has a linked Telegram chat (used to tell people when
+// the Research Playbook changes).
+async function listProfilesWithTelegram() {
+    if (isSupabaseEnabled) {
+        try {
+            const response = await axios.get(`${SUPABASE_REST_BASE}/postcraft_profiles`, {
+                params: { telegram_chat_id: 'not.is.null', select: '*' },
+                headers: supabaseHeaders()
+            });
+            return (response.data || []).map(fromProfileRow);
+        } catch (error) {
+            throw createSupabaseError(error, 'postcraft_profiles');
+        }
+    }
+
+    const container = await readLocalContainer();
+    return Object.values(container.profiles || {}).filter((profile) => profile.telegramChatId);
+}
+
 async function getProfileByTelegramChatId(chatId) {
     const strChatId = String(chatId || '').trim();
     if (!strChatId) {
@@ -931,5 +950,6 @@ module.exports = {
     createTelegramLinkCode,
     linkTelegramChatByCode,
     unlinkTelegramChat,
-    getProfileByTelegramChatId
+    getProfileByTelegramChatId,
+    listProfilesWithTelegram
 };

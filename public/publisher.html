@@ -1159,6 +1159,85 @@
             text-transform: capitalize;
         }
 
+        .queue-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+        }
+        .queue-meta span {
+            padding: 0.2rem 0.55rem;
+            background: var(--inset);
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            color: var(--muted);
+            font-size: 0.76rem;
+            font-weight: 600;
+        }
+        .metrics-form {
+            display: grid;
+            gap: 0.6rem;
+            padding: 0.8rem;
+            background: var(--inset);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+        }
+        .metrics-form .metrics-title {
+            color: var(--muted);
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .metrics-fields {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 0.5rem;
+        }
+        .metrics-fields label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--faint);
+        }
+        .metrics-fields input {
+            padding: 0.45rem 0.5rem;
+            font-size: 0.88rem;
+        }
+        .metrics-form .queue-btn {
+            justify-self: end;
+        }
+        .perf {
+            display: grid;
+            gap: 0.75rem;
+            margin-top: 0.75rem;
+        }
+        .perf-group-title {
+            margin-bottom: 0.3rem;
+            color: var(--faint);
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+        .perf-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 0.75rem;
+            padding: 0.3rem 0;
+            border-top: 1px solid var(--line);
+            font-size: 0.86rem;
+        }
+        .perf-row span:last-child {
+            color: var(--muted);
+            white-space: nowrap;
+        }
+        .perf-flag {
+            padding: 0.6rem 0.75rem;
+            background: rgba(250, 204, 21, 0.1);
+            border: 1px solid rgba(250, 204, 21, 0.3);
+            border-radius: 10px;
+            color: #fde68a;
+            font-size: 0.84rem;
+            line-height: 1.45;
+        }
+
         /* Pop-up extras */
         .modal-head-actions {
             display: flex;
@@ -1353,6 +1432,7 @@
             .modal-card { padding: 1.1rem; border-radius: 16px; }
             .hero-action { width: 100%; }
             .cal-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .metrics-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
             .pattern-box { padding: 1rem; }
             .pattern-modes { flex-direction: column; }
             /* Phone calendar: cells are too narrow for text, so each post
@@ -1497,6 +1577,17 @@
                 <h2>Weekly Schedules</h2>
                 <div id="schedulesList" class="list"></div>
             </section>
+
+            <!-- What the Research Playbook currently says, and how my own
+                 posts are doing against it. -->
+            <section class="card">
+                <div class="list-item-head">
+                    <h2>What's working</h2>
+                    <button type="button" class="queue-btn" id="playbookRefreshBtn">Research now</button>
+                </div>
+                <div class="meta" id="playbookSummary">Loading…</div>
+                <div id="performanceList" class="perf"></div>
+            </section>
             </div>
         </div>
     </div>
@@ -1508,7 +1599,7 @@
                 <h3 id="scheduleModalTitle">New weekly schedule</h3>
                 <button class="modal-close" id="scheduleModalClose" type="button" aria-label="Close">×</button>
             </div>
-            <p class="modal-intro">Pick how often to post and which topics to rotate through. This fills the calendar with 7 to 10 posts per week.</p>
+            <p class="modal-intro">Pick how often to post and which topics to draw from. Each slot sends you three scored drafts on Telegram; nothing is published until you approve one.</p>
                 <form id="scheduleForm">
                     <!-- LinkedIn is the only platform, so it is sent as a
                          fixed value instead of a one-option dropdown. -->
@@ -1516,16 +1607,19 @@
                     <label>LinkedIn account
                         <select name="accountId" id="accountId" required></select>
                     </label>
+                    <label>Rhythm
+                        <select name="cadence" id="scheduleCadence">
+                            <option value="recommended">A few mornings a week (recommended)</option>
+                            <option value="daily">Every day at a set time</option>
+                        </select>
+                    </label>
+                    <div class="form-hint" id="cadenceHint"></div>
                     <div class="row-2">
                         <label>Posts per week
-                            <select name="postsPerWeek">
-                                <option value="7">7 posts</option>
-                                <option value="8">8 posts</option>
-                                <option value="9">9 posts</option>
-                                <option value="10">10 posts</option>
-                            </select>
+                            <!-- Options depend on the rhythm; filled in by the script. -->
+                            <select name="postsPerWeek" id="postsPerWeek"></select>
                         </label>
-                        <label>Preferred time
+                        <label id="preferredHourLabel">Preferred time
                             <!-- Options (0-23, shown as local clock times) are
                                  filled in by the script below. -->
                             <select name="preferredHour" id="preferredHour"></select>
@@ -1559,6 +1653,7 @@
                             <div id="schedCategoryChips" class="sched-chips"></div>
                             <div class="pattern-add">
                                 <span class="pattern-hint">Add step:</span>
+                                <button type="button" onclick="addSchedCategory('niche')" class="secondary small">+ My niche</button>
                                 <button type="button" onclick="addSchedCategory('tech')" class="secondary small">+ Tech</button>
                                 <button type="button" onclick="addSchedCategory('science')" class="secondary small">+ Science</button>
                                 <button type="button" onclick="addSchedCategory('dental')" class="secondary small">+ Dental</button>
@@ -1574,6 +1669,7 @@
                         <div id="schedBlockContainer" style="display: none;">
                             <label>Category for every day
                                 <select id="schedSingleCategory">
+                                    <option value="niche">My niche (set in settings)</option>
                                     <option value="tech">Tech (TechCrunch Feed)</option>
                                     <option value="science">Science (ScienceDaily Feed)</option>
                                     <option value="dental">Dental (Dentistry Today Feed)</option>
@@ -1969,6 +2065,117 @@
                 .replace(/'/g, '&#39;');
         }
 
+        const STRUCTURE_LABELS = {
+            contrarian: 'contrarian take',
+            story_lesson: 'story, then lesson',
+            three_point: 'three-point breakdown',
+            question_led: 'question-led',
+            before_after: 'before / after'
+        };
+        const HOOK_LABELS = { number: 'opens with a number', conflict: 'opens with a conflict', claim: 'opens with a claim' };
+        const LINK_LABELS = { none: 'no link', first_comment: 'link in first comment', in_body: 'link in post' };
+
+        async function saveMetrics(event, queueItemId) {
+            event.preventDefault();
+            const form = event.target;
+            const metrics = {};
+            form.querySelectorAll('[data-metric]').forEach((input) => {
+                metrics[input.dataset.metric] = input.value === '' ? null : Number(input.value);
+            });
+
+            await PostCraftUI.withBusy(form.querySelector('button'), 'Saving…', async () => {
+                try {
+                    const response = await authFetch(apiEndpoints.updateQueueItem(queueItemId), {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ metrics })
+                    });
+                    const result = await readJsonResponse(response);
+                    if (!result.success) {
+                        throw new Error(result.details || result.error || 'Could not save the results');
+                    }
+                    await refreshOverview();
+                    notifySuccess('Results saved.');
+                } catch (error) {
+                    notifyError(error.message || 'Could not save the results');
+                }
+            });
+        }
+
+        // "What's working": the playbook in use and my own results so far.
+        async function loadInsights() {
+            const summary = document.getElementById('playbookSummary');
+            const list = document.getElementById('performanceList');
+            if (!isSignedIn) {
+                summary.textContent = 'Sign in to see this.';
+                list.innerHTML = '';
+                return;
+            }
+
+            try {
+                const [playbookResult, performance] = await Promise.all([
+                    authFetch('/publishing/playbook').then(readJsonResponse),
+                    authFetch('/publishing/performance').then(readJsonResponse)
+                ]);
+                const playbook = playbookResult.playbook;
+                const researched = playbook.createdAt
+                    ? `researched ${new Date(playbook.createdAt).toLocaleDateString()}`
+                    : (playbookResult.researchConfigured ? 'built-in defaults, no research run yet' : 'built-in defaults (research needs a search API key)');
+                summary.textContent = `${playbookResult.dryRun ? 'DRY RUN is on: nothing will be published. ' : ''}Playbook: ${researched}. Posts of ${playbook.length_range.min}-${playbook.length_range.max} characters, ${playbook.hashtag_policy.min}-${playbook.hashtag_policy.max} hashtags.`;
+
+                const group = (title, rows, labels) => rows.length ? `
+                    <div>
+                        <div class="perf-group-title">${title}</div>
+                        ${rows.map((row) => `
+                            <div class="perf-row">
+                                <span>${escapeHtml(labels[row.name] || row.name)}</span>
+                                <span>${row.avgImpressions} avg impressions · ${row.engagementRate}% · ${row.posts} post${row.posts === 1 ? '' : 's'}</span>
+                            </div>`).join('')}
+                    </div>` : '';
+
+                list.innerHTML = performance.measuredPosts
+                    ? [
+                        ...performance.flags.map((flag) => `<div class="perf-flag">${escapeHtml(flag)}</div>`),
+                        group('By link placement', performance.byLinkMode, LINK_LABELS),
+                        group('By structure', performance.byStructure, STRUCTURE_LABELS),
+                        group('By opening', performance.byHookType, HOOK_LABELS)
+                    ].join('')
+                    : '<div class="meta">No results yet. Open a published post on the calendar and enter its impressions and reactions to start comparing.</div>';
+            } catch (error) {
+                summary.textContent = 'Could not load the playbook.';
+                list.innerHTML = '';
+            }
+        }
+
+        async function refreshPlaybookNow(button) {
+            await PostCraftUI.withBusy(button, 'Researching…', async () => {
+                try {
+                    const result = await authFetch('/publishing/playbook/refresh', { method: 'POST' }).then(readJsonResponse);
+                    if (result.success) {
+                        notifySuccess(`Playbook refreshed. ${result.changes[0] || ''}`);
+                    } else {
+                        notifyError(result.reason || result.details || 'Research did not complete.');
+                    }
+                    await loadInsights();
+                } catch (error) {
+                    notifyError(error.message || 'Research did not complete.');
+                }
+            });
+        }
+
+        // The rhythm decides which "posts per week" choices make sense and
+        // whether a single preferred time applies.
+        function applyCadenceChoice() {
+            const recommended = document.getElementById('scheduleCadence').value === 'recommended';
+            const select = document.getElementById('postsPerWeek');
+            const choices = recommended ? [3, 4, 2] : [7, 8, 9, 10];
+            select.innerHTML = choices.map((count) => `<option value="${count}">${count} posts</option>`).join('');
+            document.getElementById('preferredHourLabel').style.display = recommended ? 'none' : '';
+            document.getElementById('cadenceHint').textContent = recommended
+                ? 'Posts go out on weekday mornings, on the days and in the time window the playbook currently recommends (Tuesday to Thursday, 8 to 10 AM by default).'
+                : 'One post every day at the time you choose.';
+        }
+
         // What a queue item is about: its news category or custom topic.
         function formatQueueType(item) {
             if (item.metadata?.holiday) {
@@ -2133,7 +2340,7 @@
             const hasContent = !awaitingChoice;
             const rawContent = hasContent
                 ? String(item.content)
-                : 'No text yet. When this post is due you will get up to three fresh stories on Telegram to choose from. To write it yourself instead, use Edit.';
+                : 'No text yet. When this post is due you will get three scored drafts on Telegram and approve one. To write it yourself instead, use Edit.';
             const escapedPreview = escapeHtml(rawContent).replace(/\n/g, '<br>');
             const isPublished = item.status === 'published';
             const isPublishing = item.status === 'publishing';
@@ -2147,7 +2354,9 @@
                     : isPublishing
                         ? 'Publishing now...'
                         : isPendingConfirmation
-                            ? 'Sent to Telegram — waiting for you to pick one of the options.'
+                            ? ((item.metadata?.drafts || []).length
+                                ? `${item.metadata.drafts.length} drafts are waiting in Telegram. Approve one there, or reply "my angle: ..." to have them rewritten.`
+                                : 'Sent to Telegram — waiting for you to pick one of the options.')
                             : awaitingChoice
                                 ? 'Waiting for its day. Publish Now sends the Telegram options right away.'
                                 : wasEdited
@@ -2178,6 +2387,37 @@
                    </div>`
                 : '';
 
+            // How the post was built (recorded when a draft is approved).
+            const meta = item.metadata || {};
+            const metaLine = meta.structure
+                ? `<div class="queue-meta">
+                        <span>${escapeHtml(STRUCTURE_LABELS[meta.structure] || meta.structure)}</span>
+                        <span>${escapeHtml(HOOK_LABELS[meta.hookType] || meta.hookType || '')}</span>
+                        <span>${escapeHtml(LINK_LABELS[meta.linkMode] || meta.linkMode || '')}</span>
+                        ${meta.qualityScore != null ? `<span>quality ${escapeHtml(meta.qualityScore)}/10</span>` : ''}
+                   </div>`
+                : '';
+
+            // Results are typed in by hand from LinkedIn's analytics.
+            const saved = meta.metrics || {};
+            const metricField = (name, label) => `
+                <label>${label}
+                    <input type="number" min="0" inputmode="numeric" data-metric="${name}" value="${saved[name] == null ? '' : Number(saved[name])}">
+                </label>`;
+            const metricsForm = isPublished
+                ? `<form class="metrics-form" onsubmit="saveMetrics(event, '${item.id}')">
+                        <div class="metrics-title">Results from LinkedIn analytics (fill in after a day or two)</div>
+                        <div class="metrics-fields">
+                            ${metricField('impressions', 'Impressions')}
+                            ${metricField('reactions', 'Reactions')}
+                            ${metricField('comments', 'Comments')}
+                            ${metricField('saves', 'Saves')}
+                            ${metricField('reposts', 'Reposts')}
+                        </div>
+                        <button class="queue-btn" type="submit">Save results</button>
+                   </form>`
+                : '';
+
             return `
                 <article class="queue-card">
                     <div class="queue-card-top">
@@ -2191,7 +2431,9 @@
                     <div class="queue-copy${hasContent ? '' : ' placeholder'}">
                         ${escapedPreview}
                     </div>
+                    ${metaLine}
                     ${metrics}
+                    ${metricsForm}
                     <div class="queue-status-line${item.error ? ' error' : ''}">${statusLine}</div>
                     <div class="queue-actions">
                         <button class="queue-btn danger" type="button" onclick="deleteQueueItem('${item.id}', this)" ${isPublishing ? 'disabled' : ''}>Delete</button>
@@ -2508,10 +2750,11 @@
             renderAccounts(overview.accounts || []);
             renderQueue(overview.queue || []);
             renderSchedules(overview.schedules || []);
+            loadInsights();
         }
 
         let schedPatternMode = 'rotation';
-        let schedCategorySequence = ['tech', 'science', 'dental'];
+        let schedCategorySequence = ['niche'];
 
         function setSchedPatternMode(mode) {
             schedPatternMode = mode;
@@ -2536,7 +2779,7 @@
                 const chip = document.createElement('div');
                 chip.className = 'sched-chip';
                 chip.innerHTML = `
-                    <span class="topic-list">Day ${index + 1}: ${escapeHtml(cat)}</span>
+                    <span class="topic-list">Day ${index + 1}: ${escapeHtml(cat === 'niche' ? 'my niche' : cat)}</span>
                     <button type="button" onclick="moveSchedCategory(${index}, -1)" aria-label="Move earlier">↑</button>
                     <button type="button" onclick="moveSchedCategory(${index}, 1)" aria-label="Move later">↓</button>
                     <button type="button" class="remove" onclick="removeSchedCategory(${index})" aria-label="Remove">✕</button>
@@ -2830,6 +3073,10 @@
         window.openQueueDay = openQueueDay;
         window.deleteQueueItem = deleteQueueItem;
         window.deleteSchedule = deleteSchedule;
+        window.saveMetrics = saveMetrics;
+        document.getElementById('scheduleCadence').addEventListener('change', applyCadenceChoice);
+        document.getElementById('playbookRefreshBtn').addEventListener('click', (event) => refreshPlaybookNow(event.currentTarget));
+        applyCadenceChoice();
         document.getElementById('schedCustomTopicAdd').addEventListener('click', addSchedCustomTopic);
         document.getElementById('schedCustomTopic').addEventListener('keydown', (event) => {
             if (event.key === 'Enter') {

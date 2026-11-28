@@ -1,6 +1,7 @@
 const { Groq } = require('groq-sdk');
 require('dotenv').config();
 const newsService = require('./services/newsService');
+const contentSettings = require('./config/contentSettings');
 
 class LinkedInPostGenerator {
     constructor() {
@@ -9,20 +10,12 @@ class LinkedInPostGenerator {
         });
         this.companyInfo = {};
 
-        // Model priority list - best models first (openai/gpt-oss-120b as primary)
-        this.models = [
-            'openai/gpt-oss-120b',
-            'meta-llama/llama-4-maverick-17b-128e-instruct',
-            'llama-3.3-70b-versatile',
-            'qwen/qwen3-32b',
-            'deepseek-r1-distill-llama-70b',
-            'openai/gpt-oss-20b',
-            'moonshotai/kimi-k2-instruct',
-            'llama-3.1-8b-instant',
-            'groq/compound',
-            'gemma2-9b-it',
-            'groq/compound-mini'
-        ];
+        // Preferred order. Groq retires models regularly, so before the
+        // first call this list is checked against what the API key can
+        // actually use (see ensureModels) and anything gone is dropped.
+        // Override with POSTCRAFT_MODELS (separate with |).
+        this.models = [...contentSettings.get().models];
+        this.modelsChecked = false;
 
         this.currentModelIndex = 0;
         this.modelFailures = new Map();
@@ -118,53 +111,120 @@ class LinkedInPostGenerator {
         return nextModel;
     }
 
-    async generateContentWithAI(prompt) {
-        const platformConfig = this.getPlatformConfig();
-        const systemPrompt = `You are a professional ${platformConfig.name} content creator. Generate ${platformConfig.systemStyle} posts for a ${platformConfig.audienceLabel}. Write strictly in clean plain text suitable for LinkedIn (DO NOT use any markdown formatting syntax such as **, __, *, or backticks). Do NOT use any emojis anywhere in the text, ${platformConfig.hashtagGuidance}, and follow this length rule: ${platformConfig.lengthGuidance}`;
-        const currentModel = this.getCurrentModel();
+    // One model call. Returns the text, or throws.
+    //
+    // The primary model reasons before it answers and that reasoning counts
+    // against max_tokens. When the limit is too low the answer comes back
+    // empty or cut off mid-sentence (finish_reason "length"). Both are
+    // treated as failures here, so a truncated draft can never be published
+    // and the caller moves on to the next model instead.
+    async callModel(model, { system, prompt, json = false, temperature = 0.7 }) {
+        const settings = contentSettings.get();
+        const request = {
+            messages: [
+                ...(system ? [{ role: 'system', content: system }] : []),
+                { role: 'user', content: prompt }
+            ],
+            model,
+            temperature,
+            max_tokens: settings.llmMaxTokens,
+            top_p: 1,
+            stream: false
+        };
+        if (json) {
+            request.response_format = { type: 'json_object' };
+        }
 
+        const completion = await this.groq.chat.completions.create(request);
+        const choice = completion.choices?.[0];
+        const content = String(choice?.message?.content || '').trim();
+
+        if (!content) {
+            throw new Error(`EMPTY_RESPONSE:${model}`);
+        }
+        if (choice.finish_reason === 'length') {
+            throw new Error(`TRUNCATED:${model}`);
+        }
+        return content;
+    }
+
+    // Drops models that no longer exist for this API key, once per process.
+    // If the check itself fails the configured list is used as it is.
+    async ensureModels() {
+        if (this.modelsChecked) return;
+        this.modelsChecked = true;
         try {
-            console.log(`Generating content with model ${currentModel}...`);
-
-            const chatCompletion = await this.groq.chat.completions.create({
-                messages: [
-                    {
-                        role: 'system',
-                        content: systemPrompt
-                    },
-                    {
-                        role: 'user',
-                        content: prompt
-                    }
-                ],
-                model: currentModel,
-                temperature: 0.7,
-                max_tokens: 600,
-                top_p: 1,
-                stream: false
-            });
-
-            let generatedContent = chatCompletion.choices[0]?.message?.content?.trim();
-
-            if (generatedContent) {
-                generatedContent = this.cleanLinkedInText(generatedContent);
-                console.log(`Success with ${currentModel}:`, generatedContent.substring(0, 100) + '...');
-                return generatedContent;
+            const listed = await this.groq.models.list();
+            const available = new Set((listed.data || []).map((model) => model.id));
+            const usable = this.models.filter((model) => available.has(model));
+            if (usable.length) {
+                if (usable.length !== this.models.length) {
+                    console.log(`Models no longer available and skipped: ${this.models.filter((model) => !available.has(model)).join(', ')}`);
+                }
+                this.models = usable;
+                this.currentModelIndex = 0;
             }
-
+            this.availableModels = available;
         } catch (error) {
-            console.error(`Error with ${currentModel}:`, error.message);
+            console.error(`Could not list models: ${String(error.message).slice(0, 120)}`);
+        }
+    }
 
-            if (error.status === 429 || error.message.includes('rate limit') || error.message.includes('quota')) {
-                throw new Error(`RATE_LIMIT:${currentModel}`);
-            } else if (error.status === 400 || error.message.includes('model')) {
-                throw new Error(`MODEL_ERROR:${currentModel}`);
-            } else {
-                throw new Error(`UNKNOWN_ERROR:${currentModel}`);
+    // Tries the current model, then the next ones, until one answers.
+    // options.fast: try the quick non-reasoning model first. It is used for
+    // short scoring and checking calls, where the reasoning model takes 10
+    // to 30 seconds to return a few numbers.
+    async complete(options, maxAttempts = 3) {
+        let lastError = null;
+        await this.ensureModels();
+
+        const fastModel = contentSettings.get().fastModel;
+        if (options.fast && (!this.availableModels || this.availableModels.has(fastModel))) {
+            try {
+                return await this.callModel(fastModel, options);
+            } catch (error) {
+                lastError = error;
+                console.error(`Fast model ${fastModel} failed: ${String(error.message).slice(0, 160)}`);
             }
         }
 
-        return null;
+        for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+            const model = this.getCurrentModel();
+            try {
+                return await this.callModel(model, options);
+            } catch (error) {
+                lastError = error;
+                console.error(`Model ${model} failed: ${String(error.message).slice(0, 160)}`);
+                this.switchToNextModel();
+            }
+        }
+
+        throw new Error(`MODEL_ERROR: no model produced a complete answer (${lastError?.message || 'unknown'})`);
+    }
+
+    // Plain-text generation (used by the Generator page and hashtag helper).
+    async generateContentWithAI(prompt) {
+        const platformConfig = this.getPlatformConfig();
+        const system = `You are a professional ${platformConfig.name} content creator. Generate ${platformConfig.systemStyle} posts for a ${platformConfig.audienceLabel}. Write strictly in clean plain text suitable for LinkedIn (DO NOT use any markdown formatting syntax such as **, __, *, or backticks). Do NOT use any emojis anywhere in the text, ${platformConfig.hashtagGuidance}, and follow this length rule: ${platformConfig.lengthGuidance}`;
+
+        const content = await this.complete({ system, prompt });
+        return this.cleanLinkedInText(content);
+    }
+
+    // Structured generation: asks for a JSON object and returns it parsed.
+    async generateJSON(prompt, { system = '', temperature = 0.7, fast = false } = {}) {
+        const content = await this.complete({ system, prompt, json: true, temperature, fast });
+        try {
+            return JSON.parse(content);
+        } catch (error) {
+            // Some models wrap the object in prose or a code fence.
+            const start = content.indexOf('{');
+            const end = content.lastIndexOf('}');
+            if (start !== -1 && end > start) {
+                return JSON.parse(content.slice(start, end + 1));
+            }
+            throw new Error('MODEL_ERROR: the model did not return valid JSON');
+        }
     }
 
     cleanLinkedInText(str) {

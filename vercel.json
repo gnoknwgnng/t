@@ -6,10 +6,20 @@
       "destination": "/api"
     }
   ],
+  "functions": {
+    "api/index.js": {
+      "maxDuration": 60,
+      "includeFiles": "content/**"
+    }
+  },
   "crons": [
     {
       "path": "/api/cron/publish",
       "schedule": "30 2 * * *"
+    },
+    {
+      "path": "/api/cron/research",
+      "schedule": "0 3 * * 1"
     }
   ]
 }

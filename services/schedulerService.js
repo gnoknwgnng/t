@@ -10,6 +10,9 @@ const {
 const { publishToPlatform } = require('./platformPublishers');
 const LinkedInPostGenerator = require('../linkedinPostGenerator');
 const telegramService = require('./telegramService');
+const draftFlow = require('./draftFlow');
+const contentSettings = require('../config/contentSettings');
+const playbookService = require('./playbookService');
 
 const PENDING_CONTENT_PLACEHOLDER = 'Content will be generated automatically when this scheduled item is published.';
 const ROTATING_POST_TYPES = ['service', 'tip', 'motivation', 'ai_tool'];
@@ -224,21 +227,56 @@ function buildScheduleSlots(postsPerWeek, startDate, endDate, preferredHour, opt
     return slots.sort((a, b) => a.getTime() - b.getTime());
 }
 
+// Recommended cadence: a few posts a week on chosen weekdays, inside a
+// morning window, rather than one every day.
+//   options.days       - weekdays to use, 0 = Sunday (first postsPerWeek of them)
+//   options.startHour / endHour - the window, on the user's clock
+// Times are spread across the window so posts do not all go out on the hour.
+function buildCadenceSlots(postsPerWeek, startDate, endDate, options = {}) {
+    const timeZone = resolveTimeZone(options.timeZone);
+    const notBefore = options.notBefore ? new Date(options.notBefore).getTime() : null;
+    const days = (options.days || [2, 3, 4]).slice(0, Math.max(1, postsPerWeek));
+    const startHour = Number.isFinite(options.startHour) ? options.startHour : 8;
+    const endHour = Number.isFinite(options.endHour) ? options.endHour : startHour + 2;
+    const windowMinutes = Math.max(30, (endHour - startHour) * 60);
+    const first = toCalendarDate(startDate, timeZone);
+    const last = toCalendarDate(endDate, timeZone);
+    const slots = [];
+
+    for (let day = first; compareCalendarDates(day, last) <= 0; day = addCalendarDays(day, 1)) {
+        const weekday = new Date(Date.UTC(day.year, day.month - 1, day.day)).getUTCDay();
+        if (!days.includes(weekday)) continue;
+
+        // 0, 40, 80, 20, 60 ... minutes into the window, stepping by day.
+        const offset = (slots.length * 40) % windowMinutes;
+        const scheduled = zonedTimeToUtc(day.year, day.month, day.day, startHour + Math.floor(offset / 60), timeZone, offset % 60);
+        if (notBefore !== null && scheduled.getTime() <= notBefore) continue;
+        slots.push(scheduled);
+    }
+    return slots;
+}
+
 async function generateQueueItemsForSchedule(schedule, options = {}) {
-    const slots = buildScheduleSlots(
-        schedule.postsPerWeek,
-        schedule.startDate,
-        schedule.endDate,
-        schedule.preferredHour || 10,
-        { timeZone: schedule.timeZone, notBefore: options.notBefore }
-    );
+    const slots = schedule.cadence
+        ? buildCadenceSlots(schedule.postsPerWeek, schedule.startDate, schedule.endDate, {
+            ...schedule.cadence,
+            timeZone: schedule.timeZone,
+            notBefore: options.notBefore
+        })
+        : buildScheduleSlots(
+            schedule.postsPerWeek,
+            schedule.startDate,
+            schedule.endDate,
+            schedule.preferredHour || 10,
+            { timeZone: schedule.timeZone, notBefore: options.notBefore }
+        );
     if (!slots.length) {
         return [];
     }
 
     const categories = Array.isArray(schedule.categories) && schedule.categories.length > 0
         ? schedule.categories
-        : ['tech', 'science', 'dental'];
+        : ['niche'];
     const mode = schedule.mode || 'rotation';
 
     const queueItems = [];
@@ -255,7 +293,7 @@ async function generateQueueItemsForSchedule(schedule, options = {}) {
             status: 'scheduled',
             scheduledFor: scheduledFor.toISOString(),
             createdAt: new Date().toISOString(),
-            content: `Scheduled news post [Category: ${category.toUpperCase()}]. Top 3 news options will be sent to Telegram for verification.`,
+            content: `Scheduled news post [Category: ${category.toUpperCase()}]. Three drafts will be sent to Telegram for approval.`,
             metadata: {
                 category,
                 contentStatus: 'pending_verification',
@@ -381,7 +419,7 @@ async function createScheduleAndQueue(payload, context = {}) {
         services: payload.services || [],
         countryCode: payload.countryCode || 'IN',
         mode: payload.mode === 'block' ? 'block' : 'rotation',
-        categories: categories.length > 0 ? categories : ['tech', 'science', 'dental'],
+        categories: categories.length > 0 ? categories : ['niche'],
         postsPerWeek: payload.postsPerWeek,
         preferredHour: payload.preferredHour || 10,
         startDate: normalizedStartDate.toISOString(),
@@ -393,8 +431,28 @@ async function createScheduleAndQueue(payload, context = {}) {
     // Slots are built from the calendar dates in the user's zone, and any
     // slot that has already passed today is skipped instead of firing the
     // moment the schedule is saved.
+    // "recommended" cadence: a few mornings a week. The days and window come
+    // from the Research Playbook when it has them, otherwise from settings.
+    let cadence = null;
+    if (payload.cadence === 'recommended') {
+        const settings = contentSettings.get();
+        const playbook = await playbookService.getPlaybook();
+        const window = (playbook.posting_windows || [])[0];
+        const windowDays = window?.days?.length ? window.days : [];
+        // Playbook days first, then the configured ones as extras.
+        const days = [...new Set([...windowDays, ...settings.postingDays])];
+        cadence = {
+            days,
+            startHour: window ? window.start_hour : settings.windowStartHour,
+            endHour: window ? window.end_hour : settings.windowEndHour
+        };
+        schedule.postsPerWeek = Math.min(Number(schedule.postsPerWeek) || settings.postsPerWeek, days.length);
+        schedule.preferredHour = cadence.startHour;
+    }
+
     const queueItems = await generateQueueItemsForSchedule({
         ...schedule,
+        cadence,
         timeZone,
         startDate: `${firstDay.year}-${String(firstDay.month).padStart(2, '0')}-${String(firstDay.day).padStart(2, '0')}`,
         endDate: `${lastDay.year}-${String(lastDay.month).padStart(2, '0')}-${String(lastDay.day).padStart(2, '0')}`
@@ -469,49 +527,53 @@ async function publishQueueItem(queueItemId, context = {}) {
 
             console.log(`📡 [Scheduler] Sending Telegram confirmation to user ${queueItem.userId} for queue item ${queueItem.id}...`);
 
-            // Stories this person has already been offered or has posted, so
-            // today's options are always new ones.
-            const usedLinks = new Set();
-            state.queue
-                .filter((item) => item.userId === queueItem.userId && item.id !== queueItem.id)
-                .forEach((item) => {
-                    if (item.metadata?.articleLink) usedLinks.add(item.metadata.articleLink);
-                    (item.metadata?.telegramOptions || []).forEach((option) => {
-                        if (option?.link) usedLinks.add(option.link);
-                    });
-                });
+            // Pick stories for the niche, write three scored drafts and send
+            // them for approval. Nothing is published from here.
+            const prepared = await draftFlow.prepareDrafts({ queueItem, state });
 
-            const { options, delivered } = await telegramService.sendQueueConfirmation(
-                queueItem,
-                schedule,
-                profile.telegramChatId,
-                { excludeUrls: usedLinks }
-            );
-
-            if (!options.length || !delivered) {
-                // Nothing was sent, so there is nothing to wait for: fail
-                // clearly instead of sitting in "awaiting Telegram" forever.
+            if (!prepared.drafts.length) {
+                // Better to post nothing than a weak or off-topic story.
                 queueItem.status = 'failed';
-                queueItem.error = !options.length
-                    ? `No recent news could be loaded for "${queueItem.metadata?.category || 'this topic'}". Use Publish Now to try again, or write the post yourself with Edit.`
-                    : 'The Telegram message could not be delivered. Open the bot chat, press Start, then use Publish Now to try again.';
+                queueItem.error = `Nothing posted: ${prepared.reason}`;
+                queueItem.updatedAt = new Date().toISOString();
+                await saveQueueItem(queueItem, effectiveContext);
+                await telegramService.sendMessage(profile.telegramChatId, `PostCraft AI: no post for this slot. ${prepared.reason}`);
+                return queueItem;
+            }
+
+            queueItem.metadata = {
+                ...(queueItem.metadata || {}),
+                drafts: prepared.drafts,
+                stories: prepared.stories,
+                linkMode: prepared.linkMode,
+                playbookVersion: prepared.playbookVersion,
+                telegramChatId: profile.telegramChatId,
+                verificationSentAt: new Date().toISOString()
+            };
+
+            const delivered = await telegramService.sendDraftOptions(profile.telegramChatId, queueItem, schedule, prepared);
+            if (!delivered) {
+                // Nothing reached the user, so there is nothing to wait for.
+                queueItem.status = 'failed';
+                queueItem.error = 'The Telegram message could not be delivered. Open the bot chat, press Start, then use Publish Now to try again.';
                 queueItem.updatedAt = new Date().toISOString();
                 await saveQueueItem(queueItem, effectiveContext);
                 return queueItem;
             }
 
-            // pending_confirmation is intentionally its own status, distinct
-            // from 'scheduled' — publishDueQueueItems only looks for items
-            // still in 'scheduled', so this item won't get re-processed
-            // (and re-sent to Telegram) on every scheduler tick while it
-            // waits for the person to tap a button.
+            // pending_confirmation is its own status, distinct from
+            // 'scheduled': publishDueQueueItems only looks at 'scheduled', so
+            // the drafts are not regenerated and resent on every tick while
+            // the user decides.
             queueItem.status = 'pending_confirmation';
-            queueItem.metadata = {
-                ...(queueItem.metadata || {}),
-                telegramOptions: options,
-                telegramChatId: profile.telegramChatId,
-                verificationSentAt: new Date().toISOString()
-            };
+            queueItem.updatedAt = new Date().toISOString();
+            await saveQueueItem(queueItem, effectiveContext);
+            return queueItem;
+        }
+
+        if (contentSettings.get().dryRun) {
+            queueItem.status = 'failed';
+            queueItem.error = 'Dry run: this post was NOT published.';
             queueItem.updatedAt = new Date().toISOString();
             await saveQueueItem(queueItem, effectiveContext);
             return queueItem;
@@ -555,6 +617,18 @@ async function publishDueQueueItems(options = {}, context = {}) {
         }
         return lookaheadMs > 0 && needsTelegramChoice(item) && scheduledTime <= now.getTime() + lookaheadMs;
     };
+
+    // A post left in "publishing" (the function was stopped mid-draft) goes
+    // back in line once it has been stuck for ten minutes.
+    const staleBefore = now.getTime() - 10 * 60 * 1000;
+    for (const item of state.queue) {
+        if (item.platform === 'linkedin' && item.status === 'publishing' &&
+            new Date(item.updatedAt || item.createdAt || 0).getTime() < staleBefore) {
+            item.status = 'scheduled';
+            item.updatedAt = new Date().toISOString();
+            await saveQueueItem(item, effectiveContext);
+        }
+    }
 
     const dueItems = state.queue
         .filter((item) =>
@@ -624,6 +698,7 @@ module.exports = {
     publishDueQueueItems,
     startScheduler,
     buildScheduleSlots,
+    buildCadenceSlots,
     zonedTimeToUtc,
     needsTelegramChoice
 };

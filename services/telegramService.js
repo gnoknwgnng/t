@@ -8,8 +8,24 @@ const {
     linkTelegramChatByCode
 } = require('./publishingStore');
 const { publishToPlatform } = require('./platformPublishers');
+const draftFlow = require('./draftFlow');
+const playbookService = require('./playbookService');
+const contentSettings = require('../config/contentSettings');
+
+const STRUCTURE_LABELS = {
+    contrarian: 'contrarian take',
+    story_lesson: 'story, then lesson',
+    three_point: 'three-point breakdown',
+    question_led: 'question-led',
+    before_after: 'before / after'
+};
+const HOOK_LABELS = { number: 'opens with a number', conflict: 'opens with a conflict', claim: 'opens with a claim' };
+const LINK_LABELS = { none: 'no link', first_comment: 'link in the first comment', in_body: 'link in the post' };
 
 const DEFAULT_CATEGORIES = ['tech', 'science', 'dental'];
+// Telegram re-sends an update when a reply is slow. Remember recent ones so
+// a repeat cannot redraft or republish twice.
+const seenUpdateIds = new Set();
 
 class TelegramService {
     constructor() {
@@ -158,6 +174,218 @@ class TelegramService {
         const sent = await this.sendMessage(chatId, lines.join('\n'), { reply_markup: keyboard });
 
         return { options: articles, delivered: Boolean(sent) };
+    }
+
+    // ------------------------------------------------------------------
+    // Draft approval flow: three full drafts, each with its quality score,
+    // each with its own Approve button. Nothing is published until one of
+    // those buttons is tapped.
+    // Returns true when the drafts reached the chat.
+    // ------------------------------------------------------------------
+    async sendDraftOptions(chatId, queueItem, schedule, prepared) {
+        const when = new Date(queueItem.scheduledFor).toLocaleString('en-IN', {
+            timeZone: contentSettings.get().timeZone, weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit'
+        });
+        const dryRun = contentSettings.get().dryRun ? '\nDRY RUN: approving will not publish anything.' : '';
+        const intro = await this.sendMessage(chatId, [
+            `PostCraft AI — ${prepared.drafts.length} drafts for ${when}`,
+            `Niche: ${prepared.topic}`,
+            `Link this time: ${LINK_LABELS[prepared.linkMode] || prepared.linkMode}${dryRun}`
+        ].join('\n'));
+        if (!intro) {
+            return false;
+        }
+
+        for (let index = 0; index < prepared.drafts.length; index += 1) {
+            const draft = prepared.drafts[index];
+            const score = draft.meta.score;
+            const story = (prepared.stories || []).find((item) => item.link === draft.source_url);
+            const flags = [...score.bannedHits.map((hit) => `banned phrase: ${hit}`), ...score.issues];
+            (score.factProblems || []).forEach((problem) => flags.unshift(`fact check: ${problem}`));
+
+            const header = [
+                `Draft ${index + 1} of ${prepared.drafts.length} · ${STRUCTURE_LABELS[draft.meta.structure] || draft.meta.structure} · ${HOOK_LABELS[draft.meta.hookType] || draft.meta.hookType}`,
+                `Score ${score.overall}/10 ${score.passed ? 'PASS' : 'BELOW THE BAR'} (hook ${score.hook} · specific ${score.specificity} · opinion ${score.opinion} · original ${score.originality})`,
+                ...(flags.length ? [`Check: ${flags.join('; ')}`] : []),
+                ...(story ? [`Story: ${story.title}${story.source ? ` (${story.source})` : ''}`] : [])
+            ].join('\n');
+
+            await this.sendMessage(chatId, `${header}\n\n${String(draft.final_text).slice(0, 3300)}`, {
+                disable_web_page_preview: true,
+                reply_markup: { inline_keyboard: [[{ text: `Approve draft ${index + 1}`, callback_data: `qd:${queueItem.id}:${index}` }]] }
+            });
+        }
+
+        await this.sendMessage(chatId, 'Want your own point in it? Reply:\nmy angle: <one line in your words>\nand all drafts are rewritten around that line.\n\nNothing is published until you approve a draft.', {
+            reply_markup: { inline_keyboard: [[{ text: 'Skip this post', callback_data: `qx:${queueItem.id}` }]] }
+        });
+        return true;
+    }
+
+    // Loads the queue item a button belongs to and checks that the person
+    // tapping it owns it. Returns null (after answering) if anything is off.
+    async loadOwnedPendingItem(chatId, callbackQueryId, queueItemId) {
+        const profile = await getProfileByTelegramChatId(chatId);
+        if (!profile) {
+            await this.answerCallbackQuery(callbackQueryId, 'Your Telegram is not linked to a PostCraft AI account.');
+            return null;
+        }
+
+        const state = await readState({ scope: 'all' });
+        const queueItem = state.queue.find((item) => item.id === queueItemId);
+        if (!queueItem) {
+            await this.answerCallbackQuery(callbackQueryId, 'This post no longer exists.');
+            return null;
+        }
+        if (queueItem.userId !== profile.id) {
+            await this.answerCallbackQuery(callbackQueryId, 'This post does not belong to your account.');
+            return null;
+        }
+        if (queueItem.status !== 'pending_confirmation') {
+            await this.answerCallbackQuery(callbackQueryId, `Already ${queueItem.status}.`);
+            return null;
+        }
+        return { profile, state, queueItem };
+    }
+
+    async handleDraftApproval({ chatId, callbackQueryId, queueItemId, choiceIndex }) {
+        try {
+            const loaded = await this.loadOwnedPendingItem(chatId, callbackQueryId, queueItemId);
+            if (!loaded) return;
+            const { profile, state, queueItem } = loaded;
+
+            const account = state.accounts.find((item) => item.id === queueItem.accountId);
+            if (!account) {
+                await this.answerCallbackQuery(callbackQueryId, 'Connected LinkedIn account not found.');
+                return;
+            }
+
+            await this.answerCallbackQuery(callbackQueryId, `Publishing draft ${choiceIndex + 1}...`);
+
+            try {
+                const result = await draftFlow.approveDraft({ queueItem, account, choiceIndex });
+                await updateQueueItem(queueItem.id, result.patch, { userId: profile.id });
+                await this.sendMessage(chatId, result.dryRun
+                    ? `DRY RUN — draft ${choiceIndex + 1} was approved but NOT published.`
+                    : `Published draft ${choiceIndex + 1} to LinkedIn.${result.note ? `\n\n${result.note}` : ''}\n\nAdd its impressions and reactions in the Publishing Hub after a day or two, so the system can learn what works.`,
+                { disable_web_page_preview: true });
+            } catch (publishError) {
+                const message = publishError.response?.data?.message || publishError.message;
+                await updateQueueItem(queueItem.id, { status: 'failed', error: message, updatedAt: new Date().toISOString() }, { userId: profile.id });
+                await this.sendMessage(chatId, `Publishing to LinkedIn failed: ${message}`);
+            }
+        } catch (error) {
+            console.error('[TelegramService] Error approving draft:', error.message);
+            await this.answerCallbackQuery(callbackQueryId, 'Something went wrong.');
+        }
+    }
+
+    async handleDraftSkip({ chatId, callbackQueryId, queueItemId }) {
+        try {
+            const loaded = await this.loadOwnedPendingItem(chatId, callbackQueryId, queueItemId);
+            if (!loaded) return;
+            const { profile, queueItem } = loaded;
+            const metadata = { ...(queueItem.metadata || {}) };
+            delete metadata.drafts;
+            delete metadata.stories;
+            await updateQueueItem(queueItem.id, {
+                status: 'failed',
+                error: 'Skipped by you.',
+                metadata,
+                updatedAt: new Date().toISOString()
+            }, { userId: profile.id });
+            await this.answerCallbackQuery(callbackQueryId, 'Skipped.');
+            await this.sendMessage(chatId, 'Skipped. Nothing was published for this slot.');
+        } catch (error) {
+            console.error('[TelegramService] Error skipping draft:', error.message);
+            await this.answerCallbackQuery(callbackQueryId, 'Something went wrong.');
+        }
+    }
+
+    // "my angle: ..." - rewrite the waiting drafts around the user's own line.
+    async handleMyAngle(chatId, angle) {
+        const profile = await getProfileByTelegramChatId(chatId);
+        if (!profile) {
+            await this.sendMessage(chatId, 'Link this chat from the Publishing Hub first.');
+            return;
+        }
+
+        const state = await readState({ scope: 'all' });
+        const waiting = state.queue
+            .filter((item) => item.userId === profile.id && item.status === 'pending_confirmation' && (item.metadata?.drafts || []).length)
+            .sort((a, b) => new Date(b.metadata.verificationSentAt || 0) - new Date(a.metadata.verificationSentAt || 0))[0];
+
+        if (!waiting) {
+            await this.sendMessage(chatId, 'There are no drafts waiting for approval right now. Your angle is used when the next set of drafts arrives - reply to those.');
+            return;
+        }
+
+        await this.sendMessage(chatId, 'Rewriting the drafts around your line...');
+        const prepared = await draftFlow.prepareDrafts({
+            queueItem: waiting,
+            state,
+            options: { myAngle: angle, stories: waiting.metadata.stories || [], linkMode: waiting.metadata.linkMode }
+        });
+
+        if (!prepared.drafts.length) {
+            await this.sendMessage(chatId, `Could not rewrite the drafts: ${prepared.reason} The earlier drafts are still valid.`);
+            return;
+        }
+
+        await updateQueueItem(waiting.id, {
+            metadata: { ...waiting.metadata, drafts: prepared.drafts, myAngle: angle, verificationSentAt: new Date().toISOString() },
+            updatedAt: new Date().toISOString()
+        }, { userId: profile.id });
+
+        const schedule = state.schedules.find((item) => item.id === waiting.scheduleId) || {};
+        await this.sendDraftOptions(chatId, waiting, schedule, prepared);
+    }
+
+    // /refresh - research the current state of LinkedIn reach now.
+    async handleRefreshCommand(chatId) {
+        const profile = await getProfileByTelegramChatId(chatId);
+        if (!profile) {
+            await this.sendMessage(chatId, 'Link this chat from the Publishing Hub first.');
+            return;
+        }
+
+        await this.sendMessage(chatId, 'Researching what is working on LinkedIn right now. This takes up to a minute...');
+        const result = await playbookService.refreshPlaybook({ generator: new LinkedInPostGenerator() });
+        await this.sendMessage(chatId, this.formatPlaybookUpdate(result), { disable_web_page_preview: true });
+    }
+
+    formatPlaybookUpdate(result, flags = []) {
+        if (!result.ok && !result.playbook) {
+            return `Playbook not refreshed. ${result.reason}`;
+        }
+        const playbook = result.playbook;
+        const lines = [
+            `Playbook refreshed (${playbook.version})`,
+            `${playbook.researched.searches} searches, ${playbook.researched.pagesRead} pages read. Overall confidence: ${playbook.confidence}.`,
+            '',
+            'What changed:',
+            ...result.changes.map((change) => `- ${change}`)
+        ];
+        if (flags.length) {
+            lines.push('', 'Your own results disagree with the playbook:', ...flags.map((flag) => `- ${flag}`));
+        }
+        if (!result.ok) {
+            lines.push('', `Not saved: ${result.reason}`);
+        }
+        return lines.join('\n').slice(0, 3900);
+    }
+
+    async handlePlaybookCommand(chatId) {
+        const playbook = await playbookService.getPlaybook();
+        const lines = [
+            `Playbook in use: ${playbook.version}${playbook.createdAt ? ` (${String(playbook.createdAt).slice(0, 10)})` : ' (built-in defaults, no research run yet)'}`,
+            `Length ${playbook.length_range.min}-${playbook.length_range.max} characters · hashtags ${playbook.hashtag_policy.min}-${playbook.hashtag_policy.max} · link default: ${playbook.link_policy.default_mode} (${playbook.link_policy.status})`,
+            '',
+            ...playbook.rules.slice(0, 10).map((rule) => `- [${rule.status}, ${rule.confidence}] ${rule.text}`),
+            '',
+            'Send /refresh to research again now.'
+        ];
+        await this.sendMessage(chatId, lines.join('\n').slice(0, 3900), { disable_web_page_preview: true });
     }
 
     async handleQueueConfirmationCallback({ chatId, callbackQueryId, queueItemId, choiceIndex }) {
@@ -341,12 +569,24 @@ class TelegramService {
 
     async processSingleUpdate(update) {
         if (!update) return;
+        if (update.update_id != null) {
+            if (seenUpdateIds.has(update.update_id)) return;
+            seenUpdateIds.add(update.update_id);
+            if (seenUpdateIds.size > 500) {
+                seenUpdateIds.delete(seenUpdateIds.values().next().value);
+            }
+        }
 
         if (update.callback_query) {
             const cq = update.callback_query;
             const chatId = cq.message?.chat?.id;
             const data = String(cq.data || '');
-            if (chatId && data.startsWith('qc:')) {
+            if (chatId && data.startsWith('qd:')) {
+                const [, queueItemId, choiceIndexStr] = data.split(':');
+                await this.handleDraftApproval({ chatId, callbackQueryId: cq.id, queueItemId, choiceIndex: Number(choiceIndexStr) });
+            } else if (chatId && data.startsWith('qx:')) {
+                await this.handleDraftSkip({ chatId, callbackQueryId: cq.id, queueItemId: data.split(':')[1] });
+            } else if (chatId && data.startsWith('qc:')) {
                 const [, queueItemId, choiceIndexStr] = data.split(':');
                 await this.handleQueueConfirmationCallback({
                     chatId,
@@ -381,6 +621,17 @@ class TelegramService {
             } else {
                 await this.sendMessage(chatId, 'Welcome to PostCraft AI!\n\nTo receive scheduled-post confirmations here, sign in to PostCraft AI, open the Publishing Hub, and tap "Link Telegram" — it will open a link back to this chat.\n\nYou can also reply /verify to try a demo with sample news topics.');
             }
+        } else if (/^my angle\s*[:\-]/i.test(text)) {
+            const angle = text.replace(/^my angle\s*[:\-]\s*/i, '').replace(/\s+/g, ' ').trim().slice(0, 300);
+            if (angle.length < 8) {
+                await this.sendMessage(chatId, 'Write your angle after the colon, for example:\nmy angle: funding news matters less than who is actually hiring.');
+            } else {
+                await this.handleMyAngle(chatId, angle);
+            }
+        } else if (text === '/refresh') {
+            await this.handleRefreshCommand(chatId);
+        } else if (text === '/playbook') {
+            await this.handlePlaybookCommand(chatId);
         } else if (text === '/verify' || text === '/news') {
             const profile = await getProfileByTelegramChatId(chatId);
             if (profile) {

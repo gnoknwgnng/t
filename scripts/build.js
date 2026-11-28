@@ -9,6 +9,10 @@ const requiredPaths = [
     path.join(__dirname, '..', 'public', 'auth.html'),
     path.join(__dirname, '..', 'public', 'theme.css'),
     path.join(__dirname, '..', 'public', 'ui.js'),
+    path.join(__dirname, '..', 'content', 'voice-guide.md'),
+    path.join(__dirname, '..', 'content', 'example-posts.md'),
+    path.join(__dirname, '..', 'services', 'postWriter.js'),
+    path.join(__dirname, '..', 'services', 'playbookService.js'),
     path.join(__dirname, '..', 'services', 'oauthService.js'),
     path.join(__dirname, '..', 'services', 'publishingStore.js')
 ];

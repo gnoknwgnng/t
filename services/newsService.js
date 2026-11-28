@@ -1,4 +1,5 @@
 const Parser = require('rss-parser');
+const contentSettings = require('../config/contentSettings');
 
 // ---------------------------------------------------------------------------
 // Where the news comes from.
@@ -57,8 +58,12 @@ function normalizeCategory(category) {
         .slice(0, MAX_TOPIC_LENGTH);
 }
 
+// "niche" is the special category for the configured niche: its feeds and
+// searches come from config/contentSettings.js instead of the table above.
+const NICHE_CATEGORY = 'niche';
+
 function isBuiltInCategory(category) {
-    return Object.prototype.hasOwnProperty.call(CATEGORY_FEEDS, category);
+    return category === NICHE_CATEGORY || Object.prototype.hasOwnProperty.call(CATEGORY_FEEDS, category);
 }
 
 function googleNewsUrl(query) {
@@ -163,6 +168,9 @@ class NewsService {
                 // Google's snippet is just the headline again.
                 summary = title;
             }
+            // The writer gets a longer extract than the short summary shown
+            // in Telegram and the UI, so it has real facts to work with.
+            const detail = summary.length > 1200 ? summary.substring(0, 1200) + '...' : summary;
             if (summary.length > 350) {
                 summary = summary.substring(0, 350) + '...';
             }
@@ -178,6 +186,7 @@ class NewsService {
                 category,
                 title,
                 summary,
+                detail,
                 link: String(rawLink || '').trim(),
                 // null (not "now") when the feed gives no date, so an old
                 // undated story can never pass as fresh.
@@ -198,7 +207,9 @@ class NewsService {
     }
 
     async loadCategory(category) {
-        const feeds = CATEGORY_FEEDS[category] || [];
+        const settings = contentSettings.get();
+        const isNiche = category === NICHE_CATEGORY;
+        const feeds = isNiche ? settings.nicheFeeds : (CATEGORY_FEEDS[category] || []);
         const now = Date.now();
         let items = [];
 
@@ -212,15 +223,21 @@ class NewsService {
         });
 
         const freshCount = items.filter((article) => ageInHours(article, now) <= FRESH_HOURS).length;
-        if (freshCount < MIN_FRESH_BEFORE_TOP_UP) {
-            const query = CATEGORY_SEARCH[category] || category;
-            try {
-                const extra = await this.fetchFeed(googleNewsUrl(query), category, { fromGoogle: true });
-                items = items.concat(extra);
-            } catch (error) {
-                console.error(`[NewsService] Google News top-up failed for '${category}': ${error.message}`);
+        // The niche always searches as well, so it sees stories its feeds
+        // missed; other categories only top up when their feeds are thin.
+        const queries = isNiche
+            ? settings.nicheSearches
+            : (freshCount < MIN_FRESH_BEFORE_TOP_UP ? [CATEGORY_SEARCH[category] || category] : []);
+        const searched = await Promise.allSettled(
+            queries.map((query) => this.fetchFeed(googleNewsUrl(query), category, { fromGoogle: true }))
+        );
+        searched.forEach((result, index) => {
+            if (result.status === 'fulfilled') {
+                items = items.concat(result.value);
+            } else {
+                console.error(`[NewsService] Google News search failed for '${queries[index]}': ${result.reason?.message}`);
             }
-        }
+        });
 
         items.sort((a, b) => ageInHours(a, now) - ageInHours(b, now));
         return items;
@@ -283,5 +300,6 @@ service.selectFreshArticles = selectFreshArticles;
 service.normalizeCategory = normalizeCategory;
 service.isBuiltInCategory = isBuiltInCategory;
 service.ageInHours = ageInHours;
+service.NICHE_CATEGORY = NICHE_CATEGORY;
 
 module.exports = service;

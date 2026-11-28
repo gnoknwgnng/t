@@ -4,9 +4,11 @@ const cors = require('cors');
 const axios = require('axios');
 const cookie = require('cookie');
 const LinkedInPostGenerator = require('./linkedinPostGenerator');
-const { readState, writeState, createId, upsertProfile, getProfile, createTelegramLinkCode, unlinkTelegramChat, updateQueueItem, deleteQueueItems, deleteSchedule } = require('./services/publishingStore');
+const { readState, writeState, createId, upsertProfile, getProfile, createTelegramLinkCode, unlinkTelegramChat, updateQueueItem, deleteQueueItems, deleteSchedule, listProfilesWithTelegram } = require('./services/publishingStore');
 const { createScheduleAndQueue, publishQueueItem, publishDueQueueItems, startScheduler } = require('./services/schedulerService');
 const telegramService = require('./services/telegramService');
+const playbookService = require('./services/playbookService');
+const contentSettings = require('./config/contentSettings');
 const {
     getLinkedInOAuthConfig,
     isLinkedInOAuthConfigured,
@@ -156,15 +158,6 @@ app.post('/session/clear', requireAuth, async (req, res) => {
 
 app.get('/publishing/overview', async (req, res) => {
     try {
-        // Safety net for when the scheduler is not running: opening the
-        // Publishing Hub also handles this person's own posts that are due.
-        // Failures here must never stop the page from loading.
-        try {
-            await publishDueQueueItems({ limit: 5 }, req.userContext);
-        } catch (dueError) {
-            console.error('Could not process due posts on overview load:', dueError.message);
-        }
-
         const state = await readState(req.userContext);
         res.json({ success: true, ...filterLinkedInState(state) });
     } catch (error) {
@@ -409,7 +402,8 @@ app.post('/publishing/schedules', async (req, res) => {
             endDate,
             mode,
             categories,
-            timeZone
+            timeZone,
+            cadence
         } = req.body;
 
         if (!platform || !accountId || !postsPerWeek) {
@@ -444,6 +438,8 @@ app.post('/publishing/schedules', async (req, res) => {
             endDate: endDate || undefined,
             timeZone,
             mode,
+            // "recommended" = a few mornings a week; anything else = daily.
+            cadence: cadence === 'recommended' ? 'recommended' : 'daily',
             categories: Array.isArray(categories) ? categories : (categories ? [categories] : [])
         }, req.userContext);
 
@@ -498,12 +494,13 @@ app.post('/publishing/queue/:id/publish', async (req, res) => {
 
 app.patch('/publishing/queue/:id', async (req, res) => {
     try {
-        const { content, scheduledFor } = req.body || {};
+        const { content, scheduledFor, metrics } = req.body || {};
         const hasContent = typeof content === 'string' && content.trim().length > 0;
         const hasDate = Boolean(scheduledFor);
+        const hasMetrics = metrics && typeof metrics === 'object';
 
-        if (!hasContent && !hasDate) {
-            return res.status(400).json({ success: false, error: 'content or scheduledFor is required' });
+        if (!hasContent && !hasDate && !hasMetrics) {
+            return res.status(400).json({ success: false, error: 'content, scheduledFor or metrics is required' });
         }
 
         const state = await readState(req.userContext);
@@ -536,6 +533,17 @@ app.patch('/publishing/queue/:id', async (req, res) => {
             }
         }
 
+        // Results typed in from LinkedIn analytics. Blank means "not known".
+        if (hasMetrics) {
+            const cleaned = {};
+            ['impressions', 'reactions', 'comments', 'saves', 'reposts'].forEach((field) => {
+                const value = metrics[field];
+                const number = Number(value);
+                cleaned[field] = value === '' || value == null || !Number.isFinite(number) || number < 0 ? null : Math.round(number);
+            });
+            patch.metadata = { ...(patch.metadata || item.metadata || {}), metrics: cleaned, metricsUpdatedAt: new Date().toISOString() };
+        }
+
         await updateQueueItem(item.id, patch, req.userContext);
         res.json({ success: true, item: { ...item, ...patch } });
     } catch (error) {
@@ -561,6 +569,72 @@ app.delete('/publishing/queue/:id', async (req, res) => {
     }
 });
 
+
+// Which structure, opening and link placement work best on this account,
+// from the results the user has typed in, and where that disagrees with the
+// Research Playbook.
+app.get('/publishing/performance', async (req, res) => {
+    try {
+        const state = await readState(req.userContext);
+        const published = state.queue.filter((item) => item.status === 'published');
+        const playbook = await playbookService.getPlaybook();
+        const learning = playbookService.applyAccountLearning(playbook, published);
+        res.json({
+            success: true,
+            publishedPosts: published.length,
+            ...learning.performance,
+            flags: learning.flags,
+            overrides: learning.overrides
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Failed to load performance', details: error.message });
+    }
+});
+
+app.get('/publishing/playbook', async (req, res) => {
+    try {
+        const settings = contentSettings.get();
+        res.json({
+            success: true,
+            playbook: await playbookService.getPlaybook(),
+            researchConfigured: Boolean(settings.searchApiKey),
+            niche: settings.niche,
+            dryRun: settings.dryRun
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Failed to load the playbook', details: error.message });
+    }
+});
+
+// Runs the web research now. Shared by the signed-in "refresh" button, the
+// weekly cron below and the Telegram /refresh command.
+async function runPlaybookRefresh() {
+    const result = await playbookService.refreshPlaybook({ generator: new LinkedInPostGenerator() });
+
+    // Tell everyone with Telegram linked what changed (and nothing more).
+    if (result.playbook) {
+        try {
+            const profiles = await listProfilesWithTelegram();
+            for (const profile of profiles) {
+                const state = await readState({ userId: profile.id });
+                const learning = playbookService.applyAccountLearning(result.playbook, state.queue.filter((item) => item.status === 'published'));
+                await telegramService.sendMessage(profile.telegramChatId, telegramService.formatPlaybookUpdate(result, learning.flags), { disable_web_page_preview: true });
+            }
+        } catch (error) {
+            console.error('Could not send the playbook update:', error.message);
+        }
+    }
+    return result;
+}
+
+app.post('/publishing/playbook/refresh', async (req, res) => {
+    try {
+        const result = await runPlaybookRefresh();
+        res.json({ success: result.ok, reason: result.reason || '', changes: result.changes || [], playbook: result.playbook || null });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Research failed', details: error.message });
+    }
+});
 
 app.get('/model-status', requireAuth, (req, res) => {
     try {
@@ -849,6 +923,25 @@ app.get('/api/cron/publish', async (req, res) => {
         res.json({ success: true, timestamp: new Date().toISOString(), ...result });
     } catch (error) {
         console.error('Cron publish error:', error.message);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Weekly research job (see "crons" in vercel.json). Skips itself when the
+// playbook is still fresh, so calling it more often costs nothing.
+app.get('/api/cron/research', async (req, res) => {
+    if (!isAuthorizedCronRequest(req)) {
+        return res.status(401).json({ success: false, error: 'Not authorized.' });
+    }
+
+    try {
+        if (!(await playbookService.isRefreshDue())) {
+            return res.json({ success: true, skipped: 'The playbook is still fresh.' });
+        }
+        const result = await runPlaybookRefresh();
+        res.json({ success: result.ok, reason: result.reason || '', changes: result.changes || [] });
+    } catch (error) {
+        console.error('Research cron error:', error.message);
         res.status(500).json({ success: false, error: error.message });
     }
 });
